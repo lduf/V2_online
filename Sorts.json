@@ -1,0 +1,129 @@
+[
+    {
+        "name":"Boule de feu",
+        "degat":50,
+        "soin":0,
+        "de":6
+    },
+    {
+        "name":"Lancer de cailloux",
+        "degat":125,
+        "soin":-100,
+        "de":18
+    },
+    {
+        "name":"Sabre Maléfique",
+        "degat":200,
+        "soin":-200,
+        "de":1
+    },
+    {
+      "name":"Éternuement stratégique",
+      "degat":20,
+      "soin":20,
+      "de":20
+    },
+    {
+      "name":"Limousin",
+      "degat":30,
+      "soin":0,
+      "de":5
+    },
+    {
+      "name":"Boisson énergétique",
+      "degat":100,
+      "soin":-70,
+      "de":314
+    },
+    {
+      "name":"Week end de famille",
+      "degat":-42,
+      "soin":40,
+      "de":69
+    },
+    {
+      "name":"Pichenette Sauvage",
+      "degat":18,
+      "soin":0,
+      "de":2
+    },
+    {
+      "name":"Traquenard du Jeudi Soir",
+      "degat":55,
+      "soin":55,
+      "de":1
+    },
+    {
+        "name":"Equa diff au borne de l'interrupteur",
+        "degat":30,
+        "soin":-10,
+        "de": 4
+    },
+    {
+          "name":"Triple K",
+          "degat":-30,
+          "soin":50,
+          "de":3
+      },
+      {
+        "name":"Herbe médicinale",
+        "degat":-100,
+        "soin":200,
+        "de":4
+      },
+      {
+        "name":"Uber Eat",
+        "degat":12,
+        "soin":12,
+        "de":1
+      },
+    {
+      "name":"Zinédine Zidane",
+      "degat":80,
+      "soin":-40,
+      "de":10
+    },
+    {
+      "name":"Canard Digérateur",
+      "degat":60,
+      "soin":50,
+      "de":150
+    },
+    {
+      "name":"Balayage de l'enfer",
+      "degat":250,
+      "soin":0,
+      "de":666
+    },
+    {
+      "name":"Rattrapage de cours",
+      "degat":-40,
+      "soin":-40,
+      "de":15
+    },
+    {
+      "name":"Écart quille ! ",
+      "degat":32,
+      "soin":0,
+      "de":10
+    },
+    {
+      "name":"Chance ",
+      "degat":132,
+      "soin":131,
+      "de":100000
+    },
+    {
+      "name":"Défausse moi ",
+      "degat":-1000,
+      "soin":-1000,
+      "de":10000
+    },
+    {
+      "name":"Souflle de Dieu ",
+      "degat":0,
+      "soin":100,
+      "de":1
+    }
+
+]

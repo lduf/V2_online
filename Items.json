@@ -1,0 +1,102 @@
+[
+    {
+        "name":"Poly de thermo",
+        "attaque":0,
+        "vie":40
+    },
+    {
+        "name":"Berger Allemand",
+        "attaque":-20,
+        "vie":46
+    },
+    {
+        "name":"Polenta du beurk",
+        "attaque":-10,
+        "vie":-20
+    },
+    {
+        "name":"Calculatrice",
+        "attaque":30,
+        "vie":-30
+    },
+    {
+        "name":"IE de Maths",
+        "attaque":36,
+        "vie":36
+    },
+    {
+        "name":"Vans Strawberry",
+        "attaque":-6,
+        "vie":-3
+    },
+    {
+        "name":"Velov",
+        "attaque":18,
+        "vie":34
+    },
+    {
+        "name":"Poulet Fermier",
+        "attaque":21,
+        "vie":-21
+    },
+    {
+        "name":"Bouteille d'eau du show d'inté",
+        "attaque":15,
+        "vie":-30
+    },
+    {
+        "name":"Mouchoir de Fanny",
+        "attaque":20,
+        "vie":45
+    },
+    {
+        "name":"Gourde",
+        "attaque":1,
+        "vie":60
+    },
+    {
+        "name":"Corpus de CSS",
+        "attaque":33,
+        "vie":-85
+    },
+    {
+        "name":"Casserole de Max",
+        "attaque":0,
+        "vie":-50
+    },
+    {
+        "name":"Stage ou CDD",
+        "attaque":27,
+        "vie":-37
+    },
+    {
+        "name":"Tableau de turne",
+        "attaque":20,
+        "vie":-40
+    },
+    {
+        "name":"Controlleur TCL",
+        "attaque":-20,
+        "vie":40
+    },
+    {
+        "name":"Allo Père Noël",
+        "attaque":26,
+        "vie":-30
+    },
+    {
+        "name":"Stage cancelled",
+        "attaque":-12,
+        "vie":-20
+    },
+    {
+        "name":"La réponse",
+        "attaque":42,
+        "vie":-84
+    },
+    {
+        "name":"Le kazoo",
+        "attaque":10,
+        "vie":10
+    }
+]
