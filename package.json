@@ -10,15 +10,14 @@
   ],
   "scripts": {
     "build:engine": "npm run build -w @arene/engine",
-    "build": "npm run build:engine && npm run build -w @arene/client && npm run build -w @arene/server",
+    "build": "node outils/build.mjs",
     "dev": "npm run build:engine && concurrently -n engine,server,client -c cyan,magenta,green \"npm:dev:engine\" \"npm:dev:server\" \"npm:dev:client\"",
     "dev:engine": "npm run dev -w @arene/engine",
     "dev:server": "npm run dev -w @arene/server",
     "dev:client": "npm run dev -w @arene/client",
-    "start": "npm run build && node packages/server/dist/index.js",
+    "start": "node outils/build.mjs && node packages/server/dist/index.js",
     "typecheck": "npm run typecheck -w @arene/engine && npm run typecheck -w @arene/server && npm run typecheck -w @arene/client",
-    "test": "npm run test -w @arene/engine",
-    "vercel-build": "npm run build:engine && npm run build -w @arene/client && npm run build -w @arene/server && node outils/verifier-build.mjs"
+    "test": "npm run test -w @arene/engine"
   },
   "devDependencies": {
     "concurrently": "^9.1.2",

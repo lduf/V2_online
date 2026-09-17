@@ -20,9 +20,14 @@ l'écran de build :
 
 | Réglage | Valeur (déjà dans `vercel.json`) |
 | --- | --- |
-| Build Command | `npm run vercel-build` |
+| Build Command | `node outils/build.mjs` |
 | Output Directory | `packages/client/dist` |
 | Install Command | `npm install` |
+
+> Le build passe par un script Node plutôt que par une chaîne de scripts npm.
+> Avec des workspaces, `npm run <script>` peut être propagé à chaque paquet, et
+> un paquet qui n'a pas ce script fait échouer tout le build. Le script Node
+> enchaîne les trois builds dans l'ordre et vérifie le résultat.
 
 ### 2. Brancher une base Postgres
 
