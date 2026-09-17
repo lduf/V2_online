@@ -12,8 +12,12 @@ export interface Banniere {
   id: TypeBanniere;
   nom: string;
   texte: string;
-  coutUnite: { credits?: number; eclats?: number };
-  coutDix: { credits?: number; eclats?: number };
+  /** Prix d'un booster. */
+  coutBooster: { credits?: number; eclats?: number };
+  /** Prix du lot, légèrement remisé. */
+  coutLot: { credits?: number; eclats?: number };
+  /** Nombre de boosters dans un lot. */
+  boostersParLot: number;
   /** Poids de rareté pour un tirage simple. */
   poids: Record<Rarete, number>;
   /** Probabilité de tirer un personnage plutôt qu'un sort (0-1). */
@@ -34,8 +38,9 @@ export const BANNIERES: Record<TypeBanniere, Banniere> = {
     id: 'STANDARD',
     nom: 'Invocation du Campus',
     texte: 'Le tout-venant : sorts, personnages, parfois une pépite.',
-    coutUnite: { credits: 800 },
-    coutDix: { credits: 7200 },
+    coutBooster: { credits: 1200 },
+    coutLot: { credits: 5400 },
+    boostersParLot: 5,
     poids: { COMMUN: 56, RARE: 31, EPIQUE: 11, LEGENDAIRE: 2 },
     partPerso: 0.32,
     plancherIv: 0,
@@ -48,8 +53,9 @@ export const BANNIERES: Record<TypeBanniere, Banniere> = {
     id: 'LEGENDAIRE',
     nom: 'Rituel des Anciens',
     texte: 'Coûte des éclats. Rien de commun, gènes déjà affûtés.',
-    coutUnite: { eclats: 45 },
-    coutDix: { eclats: 400 },
+    coutBooster: { eclats: 60 },
+    coutLot: { eclats: 270 },
+    boostersParLot: 5,
     poids: { COMMUN: 0, RARE: 52, EPIQUE: 38, LEGENDAIRE: 10 },
     partPerso: 0.45,
     plancherIv: 12,
@@ -131,39 +137,80 @@ export function tirer(banniere: Banniere, rng: Rng, compteurPitie: number): Resu
   };
 }
 
+export interface Booster {
+  cartes: ResultatTirage[];
+  /** Rareté la plus haute du paquet : sert à l'aura affichée avant ouverture. */
+  meilleureRarete: Rarete;
+  /** Le paquet contient au moins une variante cosmétique. */
+  contientVariante: boolean;
+}
+
 export interface ResultatInvocation {
-  tirages: ResultatTirage[];
+  boosters: Booster[];
   nouveauCompteurPitie: number;
 }
 
+function estVariante(t: ResultatTirage): boolean {
+  return (t.kind === 'PERSO' && t.chromatique) || (t.kind === 'SORT' && t.prisme);
+}
+
+/**
+ * Ouvre `nombreBoosters` paquets.
+ *
+ * Deux règles donnent leur rythme aux paquets :
+ * - chaque booster contient **au moins une carte rare ou mieux**, pour qu'aucun
+ *   paquet ne soit une déception complète ;
+ * - la meilleure carte est placée **en dernier**, parce que tout l'intérêt de
+ *   la cérémonie est que la tension monte au lieu de retomber.
+ */
 export function invoquer(
   banniere: Banniere,
   rng: Rng,
   compteurPitie: number,
-  nombre: number,
+  nombreBoosters: number,
 ): ResultatInvocation {
-  const tirages: ResultatTirage[] = [];
+  const boosters: Booster[] = [];
   let pitie = compteurPitie;
-  let aEuRare = false;
-  for (let i = 0; i < nombre; i++) {
-    const r = tirer(banniere, rng, pitie);
-    if (rareteAuMoins(r.rarete, banniere.pitieRarete)) pitie = 0;
-    else pitie += 1;
-    if (rareteAuMoins(r.rarete, 'RARE')) aEuRare = true;
-    tirages.push(r);
+
+  for (let b = 0; b < nombreBoosters; b++) {
+    const cartes: ResultatTirage[] = [];
+    for (let i = 0; i < banniere.cartes; i++) {
+      const r = tirer(banniere, rng, pitie);
+      pitie = rareteAuMoins(r.rarete, banniere.pitieRarete) ? 0 : pitie + 1;
+      cartes.push(r);
+    }
+
+    // Garantie « au moins une rare » : on remplace la plus faible si besoin.
+    if (!cartes.some((c) => rareteAuMoins(c.rarete, 'RARE'))) {
+      const pool = SORTS.filter((s) => s.rarete === 'RARE');
+      cartes[cartes.length - 1] = {
+        kind: 'SORT',
+        defId: rng.pick(pool).id,
+        rarete: 'RARE',
+        ivs: tirerIvsSort(rng, banniere.plancherIv),
+        prisme: tirerPrisme(rng, banniere.bonusVariante),
+      };
+    }
+
+    // La meilleure carte passe en dernier. À rareté égale, une variante
+    // cosmétique l'emporte : c'est elle qui fait la révélation mémorable.
+    const valeur = (t: ResultatTirage): number =>
+      ORDRE_RARETE.indexOf(t.rarete) * 2 + (estVariante(t) ? 1 : 0);
+    let meilleur = 0;
+    for (let i = 1; i < cartes.length; i++) {
+      if (valeur(cartes[i]) > valeur(cartes[meilleur])) meilleur = i;
+    }
+    const [carteFinale] = cartes.splice(meilleur, 1);
+    cartes.push(carteFinale);
+
+    boosters.push({
+      cartes,
+      meilleureRarete: carteFinale.rarete,
+      contientVariante: cartes.some(estVariante),
+    });
   }
-  // Garantie « au moins un RARE » sur un multi de 10.
-  if (nombre >= 10 && !aEuRare) {
-    const pool = SORTS.filter((s) => s.rarete === 'RARE');
-    tirages[nombre - 1] = {
-      kind: 'SORT',
-      defId: rng.pick(pool).id,
-      rarete: 'RARE',
-      ivs: tirerIvsSort(rng, banniere.plancherIv),
-      prisme: tirerPrisme(rng, banniere.bonusVariante),
-    };
-  }
-  return { tirages, nouveauCompteurPitie: pitie };
+
+  return { boosters, nouveauCompteurPitie: pitie };
 }
 
 /** Coûts des services de la boutique. */

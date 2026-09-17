@@ -179,8 +179,8 @@ export const api = {
     requete<Profil>('POST', `/persos/${uid}/hyper`, { stat }),
   rerollGenesSort: (uid: string) => requete<Profil>('POST', `/sorts/${uid}/genes`, {}),
 
-  invoquer: (banniere: string, nombre: number) =>
-    requete<Profil & { tirages: unknown[] }>('POST', '/invocation', { banniere, nombre }),
+  invoquer: (banniere: string, lot: boolean) =>
+    requete<Profil & { boosters: unknown[] }>('POST', '/invocation', { banniere, lot }),
   boutique: () => requete<Boutique>('GET', '/boutique'),
   acheter: (kind: string, id: string) =>
     requete<Profil & { prix: number; obtenu: unknown }>('POST', '/boutique/achat', { kind, id }),

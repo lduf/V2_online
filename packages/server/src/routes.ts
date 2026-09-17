@@ -327,22 +327,23 @@ routes.post(
   a(async (req, res) => {
     const compte = req.compte!;
     const type = req.body?.banniere as TypeBanniere;
-    const nombreTirages = Number(req.body?.nombre ?? 1) === 10 ? 10 : 1;
     const banniere = BANNIERES[type];
     if (!banniere) return erreur(res, 400, 'Bannière inconnue.');
 
-    const cout = nombreTirages === 10 ? banniere.coutDix : banniere.coutUnite;
+    const lot = req.body?.lot === true;
+    const nombreBoosters = lot ? banniere.boostersParLot : 1;
+    const cout = lot ? banniere.coutLot : banniere.coutBooster;
     const credits = cout.credits ?? 0;
     const eclats = cout.eclats ?? 0;
     if (compte.credits < credits) return erreur(res, 402, 'Pas assez de crédits.');
     if (compte.eclats < eclats) return erreur(res, 402, 'Pas assez d’éclats.');
 
     const pitieActuelle = type === 'STANDARD' ? compte.pitie_standard : compte.pitie_legendaire;
-    const { tirages, nouveauCompteurPitie } = invoquer(
+    const { boosters, nouveauCompteurPitie } = invoquer(
       banniere,
       new Rng(seedAleatoire()),
       pitieActuelle,
-      nombreTirages,
+      nombreBoosters,
     );
 
     const db = await base();
@@ -358,28 +359,30 @@ routes.post(
           : 'UPDATE comptes SET pitie_legendaire = ? WHERE id = ?',
         [nouveauCompteurPitie, compte.id],
       );
-      for (const t of tirages) {
-        if (t.kind === 'PERSO') {
-          const p = nouveauPersoVide(t.especeId, t.natureId);
-          p.ivs = t.ivs;
-          p.chromatique = t.chromatique;
-          await ajouterPerso(tx, compte.id, p);
-        } else if (t.kind === 'SORT') {
-          const s: SortPossede = {
-            uid: uid('s'),
-            defId: t.defId,
-            ivs: t.ivs,
-            obtenuLe: Date.now(),
-            prisme: t.prisme,
-          };
-          await ajouterSort(tx, compte.id, s);
-        } else {
-          await ajouterItem(tx, compte.id, t.itemId, 1);
+      for (const booster of boosters) {
+        for (const t of booster.cartes) {
+          if (t.kind === 'PERSO') {
+            const p = nouveauPersoVide(t.especeId, t.natureId);
+            p.ivs = t.ivs;
+            p.chromatique = t.chromatique;
+            await ajouterPerso(tx, compte.id, p);
+          } else if (t.kind === 'SORT') {
+            const sp: SortPossede = {
+              uid: uid('s'),
+              defId: t.defId,
+              ivs: t.ivs,
+              obtenuLe: Date.now(),
+              prisme: t.prisme,
+            };
+            await ajouterSort(tx, compte.id, sp);
+          } else {
+            await ajouterItem(tx, compte.id, t.itemId, 1);
+          }
         }
       }
     });
 
-    res.json({ tirages, ...(await profilComplet(compte.id)) });
+    res.json({ boosters, ...(await profilComplet(compte.id)) });
   }),
 );
 
