@@ -35,6 +35,7 @@ export function versPerso(l: LignePerso): PersoPossede {
     sorts: JSON.parse(l.sorts) as (string | null)[],
     itemId: l.item_id,
     obtenuLe: nombre(l.obtenu_le),
+    chromatique: nombre(l.chromatique) === 1,
   };
 }
 
@@ -44,6 +45,7 @@ export function versSort(l: LigneSort): SortPossede {
     defId: l.def_id,
     ivs: JSON.parse(l.ivs) as IvsSort,
     obtenuLe: nombre(l.obtenu_le),
+    prisme: nombre(l.prisme) === 1,
   };
 }
 
@@ -78,8 +80,8 @@ export function publicCompte(c: LigneCompte) {
 
 export async function ajouterPerso(db: Pilote, compte: string, p: PersoPossede): Promise<void> {
   await db.run(
-    `INSERT INTO persos (uid, compte, espece_id, surnom, niveau, xp, ivs, evs, nature_id, sorts, item_id, obtenu_le)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO persos (uid, compte, espece_id, surnom, niveau, xp, ivs, evs, nature_id, sorts, item_id, obtenu_le, chromatique)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       p.uid,
       compte,
@@ -93,14 +95,15 @@ export async function ajouterPerso(db: Pilote, compte: string, p: PersoPossede):
       JSON.stringify(p.sorts),
       p.itemId,
       p.obtenuLe,
+      p.chromatique ? 1 : 0,
     ],
   );
 }
 
 export async function ajouterSort(db: Pilote, compte: string, s: SortPossede): Promise<void> {
   await db.run(
-    'INSERT INTO sorts_possedes (uid, compte, def_id, ivs, obtenu_le) VALUES (?, ?, ?, ?, ?)',
-    [s.uid, compte, s.defId, JSON.stringify(s.ivs), s.obtenuLe],
+    'INSERT INTO sorts_possedes (uid, compte, def_id, ivs, obtenu_le, prisme) VALUES (?, ?, ?, ?, ?, ?)',
+    [s.uid, compte, s.defId, JSON.stringify(s.ivs), s.obtenuLe, s.prisme ? 1 : 0],
   );
 }
 

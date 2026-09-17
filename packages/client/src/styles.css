@@ -3411,3 +3411,595 @@ s {
   font-size: 0.75rem;
   font-weight: 800;
 }
+
+/* ==========================================================================
+   Le composant Carte
+   Cadre par rareté, foil qui suit le pointeur, inclinaison 3D.
+   ========================================================================== */
+
+.carte {
+  --mx: 50%;
+  --my: 50%;
+  --rx: 0deg;
+  --ry: 0deg;
+  --foil: 0;
+  --largeur: 200px;
+  --bord: #6a6285;
+  --bord-clair: #a49cc4;
+
+  width: var(--largeur);
+  aspect-ratio: 5 / 7;
+  perspective: 900px;
+  flex: none;
+  user-select: none;
+}
+
+.carte--mini {
+  --largeur: 128px;
+}
+.carte--grand {
+  --largeur: 268px;
+}
+
+.carte.rarete--commun {
+  --bord: #6f7890;
+  --bord-clair: #aab3c4;
+}
+.carte.rarete--rare {
+  --bord: #2f78c4;
+  --bord-clair: #8ccbff;
+}
+.carte.rarete--epique {
+  --bord: #8b45d8;
+  --bord-clair: #dcb4ff;
+}
+.carte.rarete--legendaire {
+  --bord: #d98b1f;
+  --bord-clair: #ffdf94;
+}
+
+.carte__plan {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 14px;
+  transform-style: preserve-3d;
+  transform: rotateX(var(--rx)) rotateY(var(--ry));
+  transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
+
+.carte.est-survolee .carte__plan {
+  transition: transform 60ms linear;
+}
+
+.carte.est-cliquable {
+  cursor: pointer;
+}
+
+.carte.est-cliquable:focus-visible .carte__plan {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+
+.carte.est-estompee {
+  filter: grayscale(0.85) brightness(0.68);
+}
+
+.carte.est-selectionnee .carte__cadre {
+  box-shadow:
+    0 0 0 2px var(--accent),
+    0 14px 34px rgba(0, 0, 0, 0.55);
+}
+
+.carte__cadre {
+  position: absolute;
+  inset: 0;
+  border-radius: 14px;
+  padding: 7px 8px 8px;
+  display: grid;
+  grid-template-rows: auto 1fr auto auto auto;
+  gap: 4px;
+  overflow: hidden;
+  background:
+    linear-gradient(170deg, rgba(255, 255, 255, 0.09), rgba(0, 0, 0, 0.42)),
+    linear-gradient(160deg, color-mix(in srgb, var(--el) 26%, #140d24), #0e0819 72%);
+  border: 2px solid var(--bord);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.07),
+    inset 0 22px 40px -28px var(--el-clair),
+    0 12px 30px rgba(0, 0, 0, 0.5);
+}
+
+.carte.rarete--legendaire .carte__cadre {
+  border-image: linear-gradient(140deg, #ffdf94, #d98b1f 40%, #ffe9b8 60%, #b06f12) 1;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.12),
+    inset 0 22px 44px -26px #ffd98a,
+    0 0 26px rgba(255, 190, 80, 0.22),
+    0 12px 30px rgba(0, 0, 0, 0.5);
+}
+
+.carte__badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 4;
+  font-size: 0.68rem;
+  background: rgba(0, 0, 0, 0.62);
+  border-radius: 999px;
+  padding: 0.08rem 0.4rem;
+  border: 1px solid var(--bord);
+}
+
+.carte__entete {
+  display: flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.carte__nom {
+  flex: 1;
+  min-width: 0;
+  font-weight: 700;
+  font-size: 0.78rem;
+  line-height: 1.15;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+}
+
+.carte--mini .carte__nom {
+  font-size: 0.62rem;
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.carte--grand .carte__nom {
+  font-size: 0.95rem;
+}
+
+.carte__etoile {
+  font-style: normal;
+  margin-right: 0.18rem;
+  background: linear-gradient(120deg, #ffe9a8, #ff8ad0, #8ad0ff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: scintille 2.4s ease-in-out infinite;
+}
+
+@keyframes scintille {
+  0%,
+  100% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.7);
+  }
+}
+
+.carte__coin {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.64rem;
+  color: var(--el-clair);
+  background: rgba(0, 0, 0, 0.45);
+  border-radius: 5px;
+  padding: 0.04rem 0.3rem;
+  flex: none;
+}
+
+.carte__art {
+  position: relative;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  overflow: hidden;
+  background:
+    radial-gradient(70% 70% at 50% 34%, color-mix(in srgb, var(--el) 34%, transparent), transparent 72%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.32), rgba(0, 0, 0, 0.55));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  min-height: 0;
+}
+
+.carte__art > svg {
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.carte__lueur {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    46% 40% at 50% 100%,
+    color-mix(in srgb, var(--el) 55%, transparent),
+    transparent 70%
+  );
+  pointer-events: none;
+}
+
+.carte__objet {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+}
+
+.carte__objet span {
+  font-size: 2.8rem;
+  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.6));
+}
+
+.carte--mini .carte__objet span {
+  font-size: 1.9rem;
+}
+
+.carte__ligne-type {
+  display: flex;
+  align-items: center;
+  gap: 0.28rem;
+  font-size: 0.6rem;
+  color: var(--texte-doux);
+  text-transform: capitalize;
+  min-width: 0;
+}
+
+.carte__ligne-type > span:nth-child(2) {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.carte__rarete {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 800;
+  font-size: 0.56rem;
+  width: 1rem;
+  height: 1rem;
+  display: grid;
+  place-items: center;
+  border-radius: 4px;
+  flex: none;
+}
+
+.carte__texte {
+  margin: 0;
+  font-size: 0.58rem;
+  line-height: 1.32;
+  color: var(--texte-doux);
+  background: rgba(0, 0, 0, 0.34);
+  border-radius: 6px;
+  padding: 0.28rem 0.36rem;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+
+.carte--mini .carte__texte {
+  display: none;
+}
+
+.carte--grand .carte__texte {
+  font-size: 0.7rem;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
+}
+
+.carte__pied {
+  display: flex;
+  align-items: center;
+  gap: 0.28rem;
+  flex-wrap: wrap;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.55rem;
+  color: var(--texte-faible);
+}
+
+.carte__pied b {
+  color: var(--texte);
+  font-weight: 700;
+}
+
+.carte__pied .grade {
+  margin-left: auto;
+  width: 1.05rem;
+  height: 1.05rem;
+  font-size: 0.56rem;
+}
+
+.carte__sceau {
+  position: absolute;
+  bottom: 6px;
+  left: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 800;
+  font-size: 0.72rem;
+  color: #101;
+  background: linear-gradient(135deg, #ffe9a8, #ffb347);
+  width: 1.1rem;
+  height: 1.1rem;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  box-shadow: 0 0 12px rgba(255, 190, 80, 0.75);
+  z-index: 4;
+}
+
+/* ── Le foil : c'est lui qui fait qu'on bouge la souris sans raison ── */
+
+.carte__foil {
+  position: absolute;
+  inset: 0;
+  border-radius: 14px;
+  pointer-events: none;
+  opacity: calc(var(--foil) * 0.38);
+  mix-blend-mode: color-dodge;
+  background:
+    radial-gradient(
+      36% 28% at var(--mx) var(--my),
+      rgba(255, 255, 255, 0.5),
+      transparent 70%
+    ),
+    repeating-linear-gradient(
+      108deg,
+      rgba(255, 120, 190, 0.22) 0 6px,
+      rgba(120, 200, 255, 0.22) 6px 12px,
+      rgba(180, 255, 190, 0.22) 12px 18px,
+      rgba(255, 230, 130, 0.22) 18px 24px
+    );
+  background-position:
+    0 0,
+    calc(var(--mx) * -0.6) calc(var(--my) * -0.6);
+  transition: opacity 220ms ease;
+}
+
+.carte.est-survolee .carte__foil {
+  opacity: calc(var(--foil) * 0.95);
+}
+
+/* ── Variantes chromatiques et prismes ── */
+
+.carte__arcenciel {
+  position: absolute;
+  inset: 0;
+  border-radius: 14px;
+  pointer-events: none;
+  mix-blend-mode: overlay;
+  opacity: 0.32;
+  transition: opacity 240ms ease;
+  background: conic-gradient(
+    from calc(var(--mx) * 3.6),
+    #ff5ea8,
+    #ffd45e,
+    #5effa8,
+    #5ec8ff,
+    #b45eff,
+    #ff5ea8
+  );
+  animation: tourne-arcenciel 9s linear infinite;
+}
+
+@keyframes tourne-arcenciel {
+  to {
+    filter: hue-rotate(360deg);
+  }
+}
+
+.carte.est-survolee .carte__arcenciel {
+  opacity: 0.6;
+}
+
+.carte--variante .carte__cadre {
+  border-color: transparent;
+  border-image: linear-gradient(130deg, #ff8ad0, #8ad0ff 35%, #ffe9a8 65%, #b48aff) 1;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.16),
+    0 0 26px rgba(255, 140, 220, 0.3),
+    0 12px 30px rgba(0, 0, 0, 0.5);
+}
+
+.carte__paillettes {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.carte__paillettes i {
+  position: absolute;
+  left: calc(6% + var(--i) * 9%);
+  top: 50%;
+  width: 4px;
+  height: 4px;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 0 8px #fff;
+  opacity: 0;
+  animation: paillette 2.6s ease-in-out infinite;
+  animation-delay: calc(var(--i) * 230ms);
+}
+
+@keyframes paillette {
+  0%,
+  100% {
+    opacity: 0;
+    transform: translateY(18px) scale(0.4);
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-4px) scale(1.2);
+  }
+  60% {
+    opacity: 0;
+    transform: translateY(-26px) scale(0.5);
+  }
+}
+
+/* ── Balayage de lumière au survol ── */
+
+.carte__brillance {
+  position: absolute;
+  inset: 0;
+  border-radius: 14px;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.carte__brillance::after {
+  content: '';
+  position: absolute;
+  top: -60%;
+  left: -70%;
+  width: 55%;
+  height: 220%;
+  background: linear-gradient(
+    100deg,
+    transparent,
+    rgba(255, 255, 255, 0.32),
+    transparent
+  );
+  transform: rotate(14deg);
+  transition: left 620ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.carte.est-survolee .carte__brillance::after {
+  left: 120%;
+}
+
+/* Grilles de cartes */
+
+.grille-cartes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .carte__plan {
+    transform: none !important;
+  }
+}
+
+/* Codex en galerie de cartes */
+
+.codex__compteurs {
+  display: flex;
+  gap: 0.7rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.74rem;
+  color: var(--texte-doux);
+}
+
+.codex__sous-titre {
+  margin-top: 1.4rem;
+  margin-bottom: 0.6rem;
+}
+
+.grille-cartes--serree {
+  gap: 0.4rem;
+}
+
+.modale {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: grid;
+  place-items: center;
+  background: rgba(5, 2, 12, 0.8);
+  backdrop-filter: blur(8px);
+  padding: 1rem;
+  animation: fondu 240ms ease-out;
+  overflow-y: auto;
+}
+
+.modale__contenu {
+  position: relative;
+  background: var(--fond-2);
+  border: 1px solid var(--panneau-bord);
+  border-radius: 20px;
+  padding: 1.4rem;
+  max-width: 900px;
+  width: 100%;
+  max-height: 88vh;
+  overflow-y: auto;
+  box-shadow: var(--ombre);
+  animation: pop 320ms cubic-bezier(0.3, 1.4, 0.5, 1);
+}
+
+.modale__fermer {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid var(--panneau-bord);
+  border-radius: 999px;
+  width: 30px;
+  height: 30px;
+  cursor: pointer;
+  color: var(--texte-doux);
+  z-index: 2;
+}
+
+.modale__fermer:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: var(--texte);
+}
+
+.detail-espece {
+  display: grid;
+  gap: 1.2rem;
+  grid-template-columns: 1fr;
+  justify-items: center;
+}
+
+@media (min-width: 720px) {
+  .detail-espece {
+    grid-template-columns: auto 1fr;
+    justify-items: start;
+    align-items: start;
+  }
+}
+
+.detail-espece__texte h2 {
+  font-size: 1.5rem;
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.detail-espece__texte h2 small {
+  font-size: 0.85rem;
+  color: var(--texte-doux);
+  font-weight: 400;
+}
+
+.detail-espece__miens {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+}
+
+.detail-espece__miens li {
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: var(--rayon-s);
+  padding: 0.35rem 0.6rem;
+}
+
+.est-chromatique {
+  background: linear-gradient(120deg, #ffe9a8, #ff8ad0, #8ad0ff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  margin-right: 0.35rem;
+  font-weight: 800;
+}

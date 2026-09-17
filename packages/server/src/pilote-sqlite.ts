@@ -1,7 +1,7 @@
 import path from 'node:path';
 import fs from 'node:fs';
 import { CONFIG } from './config.js';
-import { instructionsSchema, type Pilote } from './pilote.js';
+import { instructionsMigration, instructionsSchema, type Pilote } from './pilote.js';
 
 type BetterSqlite = {
   prepare: (sql: string) => {
@@ -66,6 +66,13 @@ export async function creerPiloteSqlite(): Promise<Pilote> {
     },
     async init() {
       for (const sql of instructionsSchema('sqlite')) db.exec(sql);
+      for (const sql of instructionsMigration('sqlite')) {
+        try {
+          db.exec(sql);
+        } catch {
+          // La colonne existe déjà : c'est le cas nominal après la première fois.
+        }
+      }
     },
     async fermer() {
       db.close();
