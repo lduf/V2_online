@@ -197,11 +197,20 @@ routes.put(
         return erreur(res, 400, 'Il faut exactement 4 emplacements de sorts.');
       }
       const mesSorts = await carteSortsDe(compteId);
+      // Un exemplaire de sort n'appartient qu'à un personnage à la fois.
+      const ailleurs = new Set(
+        (await persosDe(compteId))
+          .filter((p) => p.uid !== perso.uid)
+          .flatMap((p) => p.sorts.filter((x): x is string => !!x)),
+      );
       const vus = new Set<string>();
       for (const s of sorts) {
         if (s === null) continue;
         if (typeof s !== 'string' || !mesSorts.has(s)) {
           return erreur(res, 400, 'Sort inconnu ou non possédé.');
+        }
+        if (ailleurs.has(s)) {
+          return erreur(res, 400, 'Cet exemplaire est déjà équipé sur un autre personnage.');
         }
         const def = mesSorts.get(s)!.defId;
         if (!espece.pool.includes(def)) {

@@ -134,11 +134,14 @@ export function equipeBot(
 /** Roster de départ offert à la création de compte. */
 export const ESPECES_DEPART = ['maxence', 'ondine', 'brigitte', 'rocco'];
 
+/** Niveau des personnages offerts : assez haut pour que le premier combat respire. */
+export const NIVEAU_DEPART = 12;
+
 export function rosterDepart(rng: Rng): EquipeGeneree {
   const persos: PersoPossede[] = [];
   const sorts = new Map<string, SortPossede>();
   for (const id of ESPECES_DEPART) {
-    const g = creerPersoAleatoire(id, 5, rng, { plancherIv: 6, prefixe: 'p' });
+    const g = creerPersoAleatoire(id, NIVEAU_DEPART, rng, { plancherIv: 6, prefixe: 'p' });
     persos.push(g.perso);
     for (const s of g.sorts) sorts.set(s.uid, s);
   }

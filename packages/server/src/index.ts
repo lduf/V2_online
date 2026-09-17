@@ -6,7 +6,12 @@ import { CONFIG } from './config.js';
 import { base, urlPostgres } from './db.js';
 import { routes } from './routes.js';
 
-export function creerApp() {
+export interface OptionsApp {
+  /** Sert le build du client depuis le même processus (auto-hébergement). */
+  servirClient?: boolean;
+}
+
+export function creerApp(options: OptionsApp = {}) {
   const app = express();
   app.disable('x-powered-by');
   app.use(cors({ origin: CONFIG.origine }));
@@ -37,8 +42,10 @@ export function creerApp() {
     },
   );
 
-  // En production on sert aussi le client construit.
-  if (fs.existsSync(CONFIG.dossierClient)) {
+  // En auto-hébergement, le même processus sert aussi le client construit.
+  // En serverless, c'est la plateforme qui sert les fichiers statiques.
+  const servirClient = options.servirClient ?? !CONFIG.serverless;
+  if (servirClient && fs.existsSync(CONFIG.dossierClient)) {
     app.use(express.static(CONFIG.dossierClient));
     app.get(/^(?!\/api\/).*/, (_req, res) => {
       res.sendFile(path.join(CONFIG.dossierClient, 'index.html'));

@@ -97,11 +97,15 @@ export function calculerStats(perso: PersoPossede): StatsCalculees {
     stats[k] = Math.max(1, Math.floor(socle * natureMod(perso.natureId, k)));
   }
 
-  // Objet tenu : bonus plats.
+  // Objet tenu. Les bonus sont donnés à leur pleine valeur au niveau maximum
+  // et réduits en dessous : sans cela, un « -30 PV » coûterait la moitié des
+  // points de vie d'un personnage de niveau 5 et resterait anecdotique à 50.
   const item = perso.itemId ? ITEMS_PAR_ID[perso.itemId] : undefined;
   if (item) {
+    const facteur = facteurObjet(niv);
     for (const [k, v] of Object.entries(item.bonus) as [StatKey, number][]) {
-      stats[k] = Math.max(1, stats[k] + v);
+      const applique = Math.round(v * facteur);
+      stats[k] = Math.max(1, stats[k] + applique);
     }
   }
   return stats;
@@ -125,6 +129,25 @@ export function preparerSort(possede: SortPossede): SortPret {
     note,
     grade: gradeDepuisPourcent(note),
   };
+}
+
+/**
+ * Valeur maximale atteignable pour une stat à un niveau donné (meilleure base
+ * du roster, gènes parfaits, nature favorable). Sert d'échelle aux jauges.
+ */
+export function maxTheorique(k: StatKey, niveau: number): number {
+  const base = k === 'pv' ? 120 : 120;
+  const niv = Math.max(1, Math.min(NIVEAU_MAX, niveau));
+  const brut = 2 * base + IV_MAX;
+  if (k === 'pv') {
+    return Math.round((Math.floor((brut * niv) / 100) + niv + 10) * ECHELLE_PV);
+  }
+  return Math.floor((Math.floor((brut * niv) / 100) + 5) * 1.1);
+}
+
+/** Part du bonus d'objet effectivement appliquée à un niveau donné. */
+export function facteurObjet(niveau: number): number {
+  return 0.25 + 0.75 * (Math.max(1, Math.min(NIVEAU_MAX, niveau)) / NIVEAU_MAX);
 }
 
 /** Multiplicateur de palier façon Pokémon, borné à ±6. */

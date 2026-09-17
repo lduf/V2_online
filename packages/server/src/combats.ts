@@ -488,7 +488,7 @@ export async function adversaireFantome(
   const candidat = await db.get<{ id: string; pseudo: string; elo: number }>(
     `SELECT id, pseudo, elo FROM comptes
      WHERE id <> ? AND parties > 0 AND elo BETWEEN ? AND ?
-     ORDER BY ${db.dialecte === 'postgres' ? 'RANDOM()' : 'RANDOM()'} LIMIT 1`,
+     ORDER BY RANDOM() LIMIT 1`,
     [compteId, elo - 350, elo + 350],
   );
 

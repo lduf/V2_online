@@ -3,7 +3,11 @@
   "private": true,
   "version": "2.0.0",
   "description": "Arene V2 - jeu de combat au tour par tour multijoueur en ligne",
-  "workspaces": ["packages/engine", "packages/server", "packages/client"],
+  "workspaces": [
+    "packages/engine",
+    "packages/server",
+    "packages/client"
+  ],
   "scripts": {
     "build:engine": "npm run build -w @arene/engine",
     "build": "npm run build:engine && npm run build -w @arene/client && npm run build -w @arene/server",
@@ -13,11 +17,14 @@
     "dev:client": "npm run dev -w @arene/client",
     "start": "npm run build && node packages/server/dist/index.js",
     "typecheck": "npm run typecheck -w @arene/engine && npm run typecheck -w @arene/server && npm run typecheck -w @arene/client",
-    "test": "npm run test -w @arene/engine"
+    "test": "npm run test -w @arene/engine",
+    "vercel-build": "npm run build:engine && npm run build -w @arene/client && npm run build -w @arene/server"
   },
   "devDependencies": {
     "concurrently": "^9.1.2",
     "typescript": "^5.7.3"
   },
-  "engines": { "node": ">=20.11" }
+  "engines": {
+    "node": ">=20.11"
+  }
 }

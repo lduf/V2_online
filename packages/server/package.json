@@ -13,7 +13,6 @@
   "dependencies": {
     "@arene/engine": "*",
     "bcryptjs": "^3.0.2",
-    "better-sqlite3": "^11.8.1",
     "cors": "^2.8.5",
     "express": "^4.21.2",
     "jsonwebtoken": "^9.0.2",
@@ -27,5 +26,8 @@
     "@types/jsonwebtoken": "^9.0.7",
     "@types/node": "^22.10.6",
     "@types/pg": "^8.11.10"
+  },
+  "optionalDependencies": {
+    "better-sqlite3": "^11.8.1"
   }
 }

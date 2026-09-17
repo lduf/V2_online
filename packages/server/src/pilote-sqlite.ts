@@ -15,9 +15,19 @@ type BetterSqlite = {
 };
 
 export async function creerPiloteSqlite(): Promise<Pilote> {
-  const { default: Database } = await import('better-sqlite3');
+  let Database: new (chemin: string) => BetterSqlite;
+  try {
+    Database = (await import('better-sqlite3')).default as unknown as new (
+      chemin: string,
+    ) => BetterSqlite;
+  } catch (e) {
+    throw new Error(
+      'better-sqlite3 est introuvable. Installe-le pour l’auto-hébergement, ' +
+        'ou définis DATABASE_URL pour utiliser Postgres.',
+    );
+  }
   fs.mkdirSync(CONFIG.dossierDonnees, { recursive: true });
-  const db = new Database(path.join(CONFIG.dossierDonnees, 'arene.db')) as unknown as BetterSqlite;
+  const db = new Database(path.join(CONFIG.dossierDonnees, 'arene.db'));
   db.pragma('journal_mode = WAL');
 
   let profondeurTx = 0;
