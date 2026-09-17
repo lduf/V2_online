@@ -15,9 +15,11 @@ import {
   SORTS_PAR_ID,
   seedAleatoire,
   TAILLE_EQUIPE,
+  tirerChromatique,
   tirerIvs,
   tirerIvsSort,
   tirerNature,
+  tirerPrisme,
   TOUTES_STATS,
   uid,
   validerEquipe,
@@ -360,6 +362,7 @@ routes.post(
         if (t.kind === 'PERSO') {
           const p = nouveauPersoVide(t.especeId, t.natureId);
           p.ivs = t.ivs;
+          p.chromatique = t.chromatique;
           await ajouterPerso(tx, compte.id, p);
         } else if (t.kind === 'SORT') {
           const s: SortPossede = {
@@ -367,6 +370,7 @@ routes.post(
             defId: t.defId,
             ivs: t.ivs,
             obtenuLe: Date.now(),
+            prisme: t.prisme,
           };
           await ajouterSort(tx, compte.id, s);
         } else {
@@ -406,6 +410,7 @@ routes.post(
       if (kind === 'PERSO') {
         const p = nouveauPersoVide(id, tirerNature(rng));
         p.ivs = tirerIvs(rng);
+        p.chromatique = tirerChromatique(rng);
         await ajouterPerso(tx, compte.id, p);
         obtenu = { kind, perso: p };
       } else if (kind === 'SORT') {
@@ -414,6 +419,7 @@ routes.post(
           defId: id,
           ivs: tirerIvsSort(rng),
           obtenuLe: Date.now(),
+          prisme: tirerPrisme(rng),
         };
         await ajouterSort(tx, compte.id, s);
         obtenu = { kind, sort: s };

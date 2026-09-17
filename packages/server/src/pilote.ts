@@ -144,3 +144,18 @@ export function instructionsSchema(dialecte: 'sqlite' | 'postgres'): string[] {
     )`,
   ];
 }
+
+/**
+ * Ajouts de colonnes sur des tables existantes. Chaque instruction est jouée
+ * isolément et son échec est ignoré : c'est la façon la plus simple d'obtenir
+ * une migration idempotente qui marche sur les deux dialectes, SQLite ne
+ * connaissant pas `ADD COLUMN IF NOT EXISTS`.
+ */
+export function instructionsMigration(dialecte: 'sqlite' | 'postgres'): string[] {
+  const ENTIER = dialecte === 'postgres' ? 'BIGINT' : 'INTEGER';
+  return [
+    `ALTER TABLE persos ADD COLUMN chromatique ${ENTIER} NOT NULL DEFAULT 0`,
+    `ALTER TABLE sorts_possedes ADD COLUMN prisme ${ENTIER} NOT NULL DEFAULT 0`,
+    `ALTER TABLE comptes ADD COLUMN essence ${ENTIER} NOT NULL DEFAULT 0`,
+  ];
+}

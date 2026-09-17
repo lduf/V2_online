@@ -182,6 +182,8 @@ export interface SortPossede {
   defId: string;
   ivs: IvsSort;
   obtenuLe: number;
+  /** Variante cosmétique « Prisme » : cadre et foil alternatifs. */
+  prisme?: boolean;
 }
 
 /** Un personnage possédé : instance unique avec gènes, nature, niveau, équipement. */
@@ -198,6 +200,8 @@ export interface PersoPossede {
   sorts: (string | null)[];
   itemId: string | null;
   obtenuLe: number;
+  /** Variante cosmétique « Chromatique » : robe alternative et particules. */
+  chromatique?: boolean;
 }
 
 /** Stats finales calculées pour le combat. */
@@ -223,6 +227,9 @@ export interface SortPret {
   critique: number;
   note: number;
   grade: GradeGenes;
+  prisme?: boolean;
+  /** Les quatre gènes au maximum. */
+  sceau?: boolean;
 }
 
 export type GradeGenes = 'D' | 'C' | 'B' | 'A' | 'S';
@@ -237,6 +244,8 @@ export interface UniteCombat {
   passifId: string;
   itemId: string | null;
   art: ArtSpec;
+  chromatique: boolean;
+  sceau: boolean;
   stats: StatsCalculees;
   pv: number;
   pvMax: number;
@@ -335,6 +344,8 @@ export interface UnitePublique {
   element: Element;
   role: Role;
   art: ArtSpec;
+  chromatique: boolean;
+  sceau: boolean;
   pv: number;
   pvMax: number;
   energie: number;

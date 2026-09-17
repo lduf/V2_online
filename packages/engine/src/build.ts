@@ -1,5 +1,6 @@
 import { getEspece } from './data/especes.js';
 import { calculerStats, paliersVides, preparerSort } from './stats.js';
+import { artEffectif, aSceauParfait } from './variantes.js';
 import type {
   EquipeCombat,
   PersoPossede,
@@ -36,7 +37,9 @@ export function construireUnite(
     role: espece.role,
     passifId: espece.passif.id,
     itemId: perso.itemId,
-    art: espece.art,
+    art: artEffectif(espece.art, espece.id, perso.chromatique),
+    chromatique: !!perso.chromatique,
+    sceau: aSceauParfait(perso.ivs),
     stats,
     pv: stats.pv,
     pvMax: stats.pv,

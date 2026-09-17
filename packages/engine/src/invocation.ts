@@ -3,6 +3,7 @@ import { SORTS } from './data/sorts.js';
 import { ITEMS } from './data/items.js';
 import { Rng } from './rng.js';
 import { tirerIvs, tirerIvsSort, tirerNature } from './stats.js';
+import { tirerChromatique, tirerPrisme } from './variantes.js';
 import type { IvsPerso, IvsSort, Rarete } from './types.js';
 
 export type TypeBanniere = 'STANDARD' | 'LEGENDAIRE';
@@ -22,6 +23,10 @@ export interface Banniere {
   /** Rareté garantie tous les `pitiePas` tirages. */
   pitieRarete: Rarete;
   pitiePas: number;
+  /** Multiplicateur appliqué aux taux de variantes cosmétiques. */
+  bonusVariante: number;
+  /** Nombre de cartes par booster. */
+  cartes: number;
 }
 
 export const BANNIERES: Record<TypeBanniere, Banniere> = {
@@ -36,6 +41,8 @@ export const BANNIERES: Record<TypeBanniere, Banniere> = {
     plancherIv: 0,
     pitieRarete: 'EPIQUE',
     pitiePas: 10,
+    bonusVariante: 1,
+    cartes: 5,
   },
   LEGENDAIRE: {
     id: 'LEGENDAIRE',
@@ -48,12 +55,21 @@ export const BANNIERES: Record<TypeBanniere, Banniere> = {
     plancherIv: 12,
     pitieRarete: 'LEGENDAIRE',
     pitiePas: 12,
+    bonusVariante: 3,
+    cartes: 5,
   },
 };
 
 export type ResultatTirage =
-  | { kind: 'PERSO'; especeId: string; rarete: Rarete; ivs: IvsPerso; natureId: string }
-  | { kind: 'SORT'; defId: string; rarete: Rarete; ivs: IvsSort }
+  | {
+      kind: 'PERSO';
+      especeId: string;
+      rarete: Rarete;
+      ivs: IvsPerso;
+      natureId: string;
+      chromatique: boolean;
+    }
+  | { kind: 'SORT'; defId: string; rarete: Rarete; ivs: IvsSort; prisme: boolean }
   | { kind: 'ITEM'; itemId: string; rarete: Rarete };
 
 function rareteAleatoire(rng: Rng, poids: Record<Rarete, number>): Rarete {
@@ -92,6 +108,7 @@ export function tirer(banniere: Banniere, rng: Rng, compteurPitie: number): Resu
       rarete: choisi.rarete,
       ivs: tirerIvs(rng, banniere.plancherIv),
       natureId: tirerNature(rng),
+      chromatique: tirerChromatique(rng, banniere.bonusVariante),
     };
   }
 
@@ -110,6 +127,7 @@ export function tirer(banniere: Banniere, rng: Rng, compteurPitie: number): Resu
     defId: sort.id,
     rarete: sort.rarete,
     ivs: tirerIvsSort(rng, banniere.plancherIv),
+    prisme: tirerPrisme(rng, banniere.bonusVariante),
   };
 }
 
@@ -142,6 +160,7 @@ export function invoquer(
       defId: rng.pick(pool).id,
       rarete: 'RARE',
       ivs: tirerIvsSort(rng, banniere.plancherIv),
+      prisme: tirerPrisme(rng, banniere.bonusVariante),
     };
   }
   return { tirages, nouveauCompteurPitie: pitie };

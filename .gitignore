@@ -22,3 +22,6 @@ donnees/
 # Héritage Java
 *.class
 *.jar
+
+# Artefacts de compilation TypeScript
+*.tsbuildinfo

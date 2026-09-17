@@ -15,6 +15,7 @@ import type {
 } from './types.js';
 import { TOUTES_STATS } from './types.js';
 import type { Rng } from './rng.js';
+import { aSceauParfaitSort } from './variantes.js';
 
 export const IV_MAX = 31;
 export const NIVEAU_MAX = 50;
@@ -128,6 +129,8 @@ export function preparerSort(possede: SortPossede): SortPret {
     critique: Math.round((12 * iv.critique) / IV_MAX),
     note,
     grade: gradeDepuisPourcent(note),
+    prisme: possede.prisme,
+    sceau: aSceauParfaitSort(iv),
   };
 }
 

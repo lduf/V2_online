@@ -3,6 +3,7 @@ import { ITEMS } from './data/items.js';
 import { getSortDef } from './data/sorts.js';
 import { Rng } from './rng.js';
 import { evsVides, tirerIvs, tirerIvsSort, tirerNature } from './stats.js';
+import { tirerChromatique, tirerPrisme } from './variantes.js';
 import { xpCumulPourNiveau } from './progression.js';
 import type { PersoPossede, SortPossede, Rarete } from './types.js';
 
@@ -24,7 +25,13 @@ export function creerPersoAleatoire(
   especeId: string,
   niveau: number,
   rng: Rng,
-  opts: { plancherIv?: number; avecItem?: boolean; prefixe?: string } = {},
+  opts: {
+    plancherIv?: number;
+    avecItem?: boolean;
+    prefixe?: string;
+    /** Multiplicateur du taux de variantes cosmétiques (0 pour en interdire). */
+    bonusVariante?: number;
+  } = {},
 ): PersoGenere {
   const espece = getEspece(especeId);
   const prefixe = opts.prefixe ?? 'p';
@@ -39,6 +46,7 @@ export function creerPersoAleatoire(
       defId,
       ivs: tirerIvsSort(rng, opts.plancherIv ?? 0),
       obtenuLe: Date.now(),
+      prisme: tirerPrisme(rng, opts.bonusVariante ?? 1),
     });
   }
 
@@ -55,6 +63,7 @@ export function creerPersoAleatoire(
     sorts: sorts.map((s) => s.uid),
     itemId: item,
     obtenuLe: Date.now(),
+    chromatique: tirerChromatique(rng, opts.bonusVariante ?? 1),
   };
   return { perso, sorts };
 }

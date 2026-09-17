@@ -1,4 +1,9 @@
-import { instructionsSchema, versPlaceholdersPg, type Pilote } from './pilote.js';
+import {
+  instructionsMigration,
+  instructionsSchema,
+  versPlaceholdersPg,
+  type Pilote,
+} from './pilote.js';
 
 /**
  * Pilote Postgres, utilisé en déploiement serverless (Vercel + Neon).
@@ -43,6 +48,13 @@ export async function creerPilotePostgres(url: string): Promise<Pilote> {
     },
     async init() {
       for (const sql of instructionsSchema('postgres')) await faire(client, sql, []);
+      for (const sql of instructionsMigration('postgres')) {
+        try {
+          await faire(client, sql, []);
+        } catch {
+          // La colonne existe déjà.
+        }
+      }
     },
     async fermer() {
       /* le pool est partagé, on ne le ferme pas ici */

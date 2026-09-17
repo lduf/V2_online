@@ -18,6 +18,14 @@ export function urlPostgres(): string | null {
 
 async function construire(): Promise<Pilote> {
   const url = urlPostgres();
+  if (!url && process.env.VERCEL) {
+    // Sur une plateforme serverless, le disque est jetable : SQLite ne peut pas
+    // servir. Mieux vaut le dire clairement que d'échouer sur un module natif.
+    throw new Error(
+      'Aucune base Postgres configurée. Ajoute une base (Storage → Create Database) ' +
+        'ou définis DATABASE_URL : le stockage sur disque ne survit pas en serverless.',
+    );
+  }
   const p = url
     ? await (await import('./pilote-postgres.js')).creerPilotePostgres(url)
     : await (await import('./pilote-sqlite.js')).creerPiloteSqlite();
@@ -54,6 +62,7 @@ export interface LigneCompte {
   saison: number;
   cree_le: number;
   vu_le: number;
+  essence: number;
 }
 
 export interface LignePerso {
@@ -69,6 +78,7 @@ export interface LignePerso {
   sorts: string;
   item_id: string | null;
   obtenu_le: number;
+  chromatique: number;
 }
 
 export interface LigneSort {
@@ -77,6 +87,7 @@ export interface LigneSort {
   def_id: string;
   ivs: string;
   obtenu_le: number;
+  prisme: number;
 }
 
 /** Postgres renvoie les BIGINT sous forme de chaîne : on normalise. */
@@ -103,5 +114,6 @@ export function normaliserCompte(c: LigneCompte): LigneCompte {
     saison: nombre(c.saison),
     cree_le: nombre(c.cree_le),
     vu_le: nombre(c.vu_le),
+    essence: nombre(c.essence),
   };
 }

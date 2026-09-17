@@ -37,6 +37,7 @@ const ATTAQUE_BASIQUE: SortPret = {
   critique: 0,
   note: 100,
   grade: 'S',
+  sceau: false,
   def: {
     id: '__attaque__',
     nom: 'Attaque',
@@ -988,6 +989,8 @@ function vueUnite(u: UniteCombat, complet: boolean): UnitePublique {
     element: u.element,
     role: u.role,
     art: u.art,
+    chromatique: u.chromatique,
+    sceau: u.sceau,
     pv: u.pv,
     pvMax: u.pvMax,
     energie: u.energie,
