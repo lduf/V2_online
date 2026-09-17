@@ -15,7 +15,28 @@ Deux choses ne survivent pas au serverless, et sont déjà prises en compte :
 ### 1. Importer le projet
 
 Sur [vercel.com/new](https://vercel.com/new), choisis le dépôt
-`lduf/v2_online`. Vercel lit `vercel.json`, il n'y a **rien à configurer** dans
+`lduf/v2_online`.
+
+> **⚠️ Le Root Directory doit rester la racine du dépôt.**
+>
+> Vercel détecte les workspaces npm et propose parfois de créer un projet par
+> paquet, avec `packages/server` ou `packages/client` comme Root Directory.
+> **Il faut refuser.** Vercel lit `vercel.json` *depuis le Root Directory* :
+> s'il pointe sur un sous-dossier, la configuration de ce dépôt n'est jamais
+> lue, et le build échoue sur un message trompeur du genre
+> `workspace @arene/server … Missing script`.
+>
+> Le déployable, ici, c'est le dépôt entier : le moteur doit être construit
+> avant le client et le serveur, la sortie statique est dans
+> `packages/client/dist` et la fonction d'API est dans `api/` — trois endroits
+> différents, tous à la racine.
+>
+> Si un projet a déjà été créé de travers :
+> **Project Settings → General → Root Directory** → laisser vide (ou `.`),
+> puis redéployer. Supprime les projets créés en double pour les autres
+> paquets, un seul suffit.
+
+Vercel lit ensuite `vercel.json`, il n'y a **rien à configurer** dans
 l'écran de build :
 
 | Réglage | Valeur (déjà dans `vercel.json`) |
