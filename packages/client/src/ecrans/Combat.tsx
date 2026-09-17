@@ -43,6 +43,11 @@ export function Combat({ combatId }: { combatId: string }) {
   );
   const [pose, setPose] = useState<Record<string, Pose>>({});
   const [secousse, setSecousse] = useState(0);
+  /** Arrêt sur image : fige la scène quelques dizaines de millisecondes à l'impact. */
+  const [gel, setGel] = useState(false);
+  const [flash, setFlash] = useState<'critique' | 'super' | 'fatal' | null>(null);
+  const [fatal, setFatal] = useState(false);
+  const [banniere, setBanniere] = useState<{ texte: string; cle: number } | null>(null);
   const [enLecture, setEnLecture] = useState(false);
   const [vitesse, setVitesse] = useState<number>(
     Number(localStorage.getItem('arene.vitesse') ?? 1.6),
@@ -57,6 +62,8 @@ export function Combat({ combatId }: { combatId: string }) {
   const cleFlottant = useRef(0);
   const monte = useRef(true);
   const pompeActive = useRef(false);
+  /** Millisecondes d'arrêt sur image à ajouter avant le prochain événement. */
+  const hitstop = useRef(0);
   const etatRef = useRef<EtatCombatClient | null>(null);
   const vitesseRef = useRef(vitesse);
   vitesseRef.current = vitesse;
@@ -138,11 +145,44 @@ export function Combat({ combatId }: { combatId: string }) {
           e.efficacite === 'SUPER' ? ' ⚡' : e.efficacite === 'FAIBLE' ? ' …' : '';
         pousserFlottant(
           `-${e.montant}${suffixe}`,
-          e.critique ? 'critique' : e.efficacite === 'SUPER' ? 'super' : e.efficacite === 'FAIBLE' ? 'faible' : 'degat',
+          e.critique
+            ? 'critique'
+            : e.efficacite === 'SUPER'
+              ? 'super'
+              : e.efficacite === 'FAIBLE'
+                ? 'faible'
+                : 'degat',
         );
-        jouer(e.critique ? 'critique' : e.efficacite === 'SUPER' ? 'super' : e.efficacite === 'FAIBLE' ? 'faible' : 'impact');
+        jouer(
+          e.critique
+            ? 'critique'
+            : e.efficacite === 'SUPER'
+              ? 'super'
+              : e.efficacite === 'FAIBLE'
+                ? 'faible'
+                : 'impact',
+        );
         setSecousse(e.critique ? 18 : e.efficacite === 'SUPER' ? 14 : 8);
         setTimeout(() => monte.current && setSecousse(0), 260);
+
+        // Arrêt sur image proportionnel à la violence du coup : c'est lui qui
+        // donne du poids, bien plus que la secousse.
+        const arret = e.critique ? 150 : e.efficacite === 'SUPER' ? 115 : e.efficacite === 'FAIBLE' ? 35 : 75;
+        setGel(true);
+        setTimeout(() => monte.current && setGel(false), arret);
+        hitstop.current = arret;
+
+        if (e.critique) {
+          setFlash('critique');
+          setTimeout(() => monte.current && setFlash(null), 260);
+        } else if (e.efficacite === 'SUPER') {
+          setFlash('super');
+          setTimeout(() => monte.current && setFlash(null), 220);
+        }
+        if (e.efficacite === 'SUPER') {
+          setBanniere({ texte: 'SUPER EFFICACE', cle: Date.now() });
+          setTimeout(() => monte.current && setBanniere(null), 900);
+        }
         break;
       }
       case 'SOIN':
@@ -163,6 +203,11 @@ export function Combat({ combatId }: { combatId: string }) {
         jouer('ko');
         setSecousse(22);
         setTimeout(() => monte.current && setSecousse(0), 400);
+        // Le coup qui met K.O. passe au ralenti, avec un resserrage sur la cible.
+        setFatal(true);
+        setFlash('fatal');
+        setTimeout(() => monte.current && setFlash(null), 320);
+        setTimeout(() => monte.current && setFatal(false), 1100);
         break;
       case 'SWITCH':
         setAffichage((a) => {
@@ -183,7 +228,9 @@ export function Combat({ combatId }: { combatId: string }) {
         break;
     }
 
-    minuteur.current = window.setTimeout(jouerProchain, duree(e) / vitesseRef.current);
+    const pause = duree(e) / vitesseRef.current + hitstop.current;
+    hitstop.current = 0;
+    minuteur.current = window.setTimeout(jouerProchain, pause);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -300,9 +347,22 @@ export function Combat({ combatId }: { combatId: string }) {
 
   return (
     <div
-      className={`combat ${secousse > 0 ? 'combat--secoue' : ''}`}
+      className={[
+        'combat',
+        secousse > 0 ? 'combat--secoue' : '',
+        gel ? 'combat--gel' : '',
+        fatal ? 'combat--fatal' : '',
+      ]
+        .filter(Boolean)
+        .join(' ')}
       style={{ '--secousse': `${secousse}px` } as React.CSSProperties}
     >
+      {flash && <div className={`flash flash--${flash}`} aria-hidden />}
+      {banniere && (
+        <div key={banniere.cle} className="banniere-efficacite" aria-hidden>
+          {banniere.texte}
+        </div>
+      )}
       <ArenePlateau
         monActif={monActif}
         sonActif={sonActif}

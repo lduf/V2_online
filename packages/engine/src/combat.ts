@@ -480,10 +480,8 @@ function lancerSort(
   const ratio = jet / faces;
   const coeff = faces === 1 ? 1 : 0.55 + 0.45 * ratio;
   const parfait = faces > 1 && jet === faces;
+  // Le dé parfait se voit sur le dé lui-même : pas de message en doublon.
   evts.push({ t: 'DE', faces, resultat: jet, coeff: Math.round(coeff * 100) / 100, parfait });
-  if (parfait) {
-    evts.push({ t: 'MESSAGE', texte: 'DÉ PARFAIT !', ton: 'epique' });
-  }
 
   etat.rng = rng.state;
 

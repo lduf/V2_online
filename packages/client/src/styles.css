@@ -859,7 +859,7 @@ s {
 }
 
 .avatar--ko .avatar__corps {
-  animation: tombe 700ms ease-in forwards;
+  animation: disloque 900ms cubic-bezier(0.3, 0, 0.6, 1) forwards;
 }
 
 @keyframes respire {
@@ -919,14 +919,28 @@ s {
   }
 }
 
-@keyframes tombe {
+/*
+ * Un personnage K.O. ne bascule plus : il blanchit sous le coup, se fissure
+ * puis se disperse vers le haut. Bien plus lisible qu'une rotation.
+ */
+@keyframes disloque {
   0% {
-    transform: rotate(0) translateY(0);
+    transform: rotate(0) translateY(0) scale(1);
     opacity: 1;
+    filter: brightness(1);
+  }
+  12% {
+    transform: rotate(-4deg) translateY(-6px) scale(1.06);
+    filter: brightness(4) saturate(0);
+  }
+  30% {
+    transform: rotate(10deg) translateY(2px) scale(0.98);
+    filter: brightness(1.6) saturate(0.4);
   }
   100% {
-    transform: rotate(78deg) translateY(16px);
-    opacity: 0.35;
+    transform: rotate(42deg) translateY(-26px) scale(0.86);
+    opacity: 0;
+    filter: brightness(1) blur(5px);
   }
 }
 
@@ -4452,5 +4466,131 @@ s {
   .paquet {
     width: 176px;
     height: 246px;
+  }
+}
+
+
+/* ==========================================================================
+   Sensation de combat
+   Arrêt sur image, flash, ralenti fatal. C'est ce qui donne du poids aux coups.
+   ========================================================================== */
+
+/*
+ * L'arrêt sur image fige la scène quelques dizaines de millisecondes à
+ * l'impact. C'est le meilleur rapport effort/effet de tout le jeu : trois
+ * lignes, et chaque coup se sent dans les mains.
+ */
+.combat--gel .arene *,
+.combat--gel .arene {
+  animation-play-state: paused !important;
+}
+
+/* Le ralenti du coup fatal, avec resserrage sur la scène. */
+.combat--fatal .arene {
+  transform: scale(1.06);
+  transition: transform 900ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.combat--fatal .arene * {
+  animation-duration: 2.4s !important;
+}
+
+.arene {
+  transition: transform 500ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+/* Flashs d'écran */
+
+.flash {
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+  pointer-events: none;
+}
+
+.flash--critique {
+  background: radial-gradient(circle at 50% 45%, rgba(255, 246, 214, 0.75), transparent 60%);
+  animation: flash-bref 260ms ease-out forwards;
+  mix-blend-mode: screen;
+}
+
+.flash--super {
+  background: radial-gradient(circle at 50% 45%, rgba(255, 150, 70, 0.6), transparent 62%);
+  animation: flash-bref 220ms ease-out forwards;
+  mix-blend-mode: screen;
+}
+
+.flash--fatal {
+  background: rgba(255, 255, 255, 0.92);
+  animation: flash-bref 320ms ease-out forwards;
+}
+
+@keyframes flash-bref {
+  0% {
+    opacity: 0;
+  }
+  14% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/*
+ * Aberration chromatique sur les critiques : les canaux rouge et cyan se
+ * décalent une fraction de seconde. À la limite du subliminal, mais on le
+ * sent.
+ */
+.combat--gel .arene__ciel {
+  filter: drop-shadow(3px 0 0 rgba(255, 60, 60, 0.5)) drop-shadow(-3px 0 0 rgba(60, 220, 255, 0.5));
+}
+
+/* Le bandeau d'efficacité */
+
+.banniere-efficacite {
+  position: absolute;
+  top: 17%;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  text-align: center;
+  font-weight: 900;
+  font-size: clamp(1.4rem, 5vw, 2.6rem);
+  letter-spacing: 0.16em;
+  color: #fff;
+  text-shadow:
+    0 0 18px #ff8a3d,
+    0 3px 12px rgba(0, 0, 0, 0.8);
+  pointer-events: none;
+  animation: bandeau-traverse 900ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes bandeau-traverse {
+  0% {
+    opacity: 0;
+    transform: translateX(-40%) skewX(-12deg) scale(0.8);
+  }
+  22% {
+    opacity: 1;
+    transform: translateX(0) skewX(-12deg) scale(1);
+  }
+  72% {
+    opacity: 1;
+    transform: translateX(0) skewX(-12deg) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(36%) skewX(-12deg) scale(1.1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flash,
+  .banniere-efficacite {
+    display: none;
+  }
+  .combat--fatal .arene {
+    transform: none;
   }
 }
