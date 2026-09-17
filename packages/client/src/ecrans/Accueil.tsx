@@ -12,6 +12,7 @@ import { useApp } from '../store';
 import { jouer } from '../son';
 import { Avatar } from '../art/Avatar';
 import { Vide } from '../composants';
+import { CarteConnexion, IntroEcran, PanneauObjectifs, useObjectifs } from '../Objectifs';
 
 export function Accueil() {
   const profil = useApp((s) => s.profil)!;
@@ -31,6 +32,12 @@ export function Accueil() {
   const compte = profil.compte;
   const division = divisionPourElo(compte.elo);
   const suivante = divisionSuivante(compte.elo);
+
+  const { recharger: rechargerObjectifs } = useObjectifs();
+
+  useEffect(() => {
+    void rechargerObjectifs();
+  }, [rechargerObjectifs]);
 
   useEffect(() => {
     monte.current = true;
@@ -136,6 +143,20 @@ export function Accueil() {
 
   return (
     <div className="accueil">
+      <IntroEcran ecran="accueil" titre="Bienvenue dans l’arène">
+        <p>
+          Tu diriges une équipe de trois personnages, un seul sur le terrain à la fois. Chaque sort
+          a un <strong>dé</strong> : peu de faces, c’est fiable ; beaucoup de faces, c’est la
+          loterie — et tomber sur la face maximale déclenche un coup critique.
+        </p>
+        <p>
+          Commence par <strong>l’entraînement solo</strong> pour prendre le jeu en main. Les
+          objectifs ci-dessous te guident et te paient.
+        </p>
+      </IntroEcran>
+
+      <CarteConnexion />
+
       <section className="panneau panneau--profil">
         <div className="profil__entete">
           <div>
@@ -290,6 +311,8 @@ export function Accueil() {
           Voir le classement
         </button>
       </section>
+
+      <PanneauObjectifs />
     </div>
   );
 }

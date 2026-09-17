@@ -251,6 +251,10 @@ export async function majApresCombat(
   run.combatId = null;
 
   const gagne = combat.etat.vainqueur === coteJoueur;
+  if (gagne) {
+    const { avancer } = await import('./objectifs.js');
+    await avancer(db, compteId, { type: 'ETAGE_TOUR', etage: run.etat.etage });
+  }
   if (!gagne) {
     run.etat.termine = true;
     run.etat.victoire = false;

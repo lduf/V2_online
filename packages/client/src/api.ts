@@ -129,6 +129,31 @@ export interface LigneClassement {
   serie: number;
 }
 
+export interface ObjectifVue {
+  id: string;
+  nom: string;
+  texte: string;
+  emoji: string;
+  valeur: number;
+  cible: number;
+  fait: boolean;
+  reclame: boolean;
+  recompense: { credits?: number; eclats?: number };
+}
+
+export interface VueObjectifs {
+  premiersPas: ObjectifVue[];
+  contrats: ObjectifVue[];
+  aReclamer: number;
+  connexion: {
+    palier: number;
+    reclamableAujourdhui: boolean;
+    cycle: { jour: number; recompense: { credits?: number; eclats?: number }; booster?: boolean }[];
+  };
+  vuIntro: string[];
+  premiersPasFinis: boolean;
+}
+
 export interface VueTour {
   enCours: boolean;
   etage: number;
@@ -168,10 +193,11 @@ export interface LigneMatch {
 // ───────────────────────────── Appels ─────────────────────────────
 
 export const api = {
-  inscription: (pseudo: string, motDePasse: string) =>
+  inscription: (pseudo: string, motDePasse: string, starter?: string) =>
     requete<{ token: string; compte: CompteInfo }>('POST', '/auth/inscription', {
       pseudo,
       motDePasse,
+      starter,
     }),
   connexion: (pseudo: string, motDePasse: string) =>
     requete<{ token: string; compte: CompteInfo }>('POST', '/auth/connexion', {
@@ -217,6 +243,18 @@ export const api = {
     requete<EtatCombatClient>('POST', `/combat/${id}/action`, { action, depuis }),
   abandonner: (id: string, depuis: number) =>
     requete<EtatCombatClient>('POST', `/combat/${id}/abandon`, { depuis }),
+
+  objectifs: () => requete<VueObjectifs>('GET', '/objectifs'),
+  reclamerObjectif: (id: string) =>
+    requete<Profil & { credits: number; eclats: number }>('POST', `/objectifs/${id}/reclamer`, {}),
+  reclamerConnexion: () =>
+    requete<Profil & { palier: number; credits: number; eclats: number; booster?: boolean }>(
+      'POST',
+      '/connexion/reclamer',
+      {},
+    ),
+  marquerIntro: (ecran: string) =>
+    requete<{ vuIntro: string[] }>('POST', `/intro/${ecran}`, {}),
 
   tour: () => requete<VueTour>('GET', '/tour'),
   tourDemarrer: () => requete<VueTour>('POST', '/tour/demarrer', {}),

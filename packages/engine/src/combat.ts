@@ -13,6 +13,7 @@ import type {
   EvtCombat,
   SortPret,
   StatKey,
+  StatsCote,
   StatutId,
   UniteCombat,
   UnitePublique,
@@ -64,6 +65,10 @@ export const ROUND_ESCALADE = 14;
 export function multiplicateurEscalade(round: number): number {
   if (round < ROUND_ESCALADE) return 1;
   return Math.min(3, 1 + 0.18 * (round - ROUND_ESCALADE + 1));
+}
+
+function statsVides(): StatsCote {
+  return { desParfaits: 0, meilleurCoup: 0, critiques: 0, superEfficaces: 0, changements: 0 };
 }
 
 export function autreCote(c: Cote): Cote {
@@ -126,6 +131,7 @@ export function creerCombat(
     remplacement: null,
     journal: [],
     limiteRounds: opts.limiteRounds ?? LIMITE_ROUNDS,
+    stats: [statsVides(), statsVides()],
   };
   const evts: EvtCombat[] = [
     {
@@ -400,6 +406,7 @@ function effectuerSwitch(
   ancien.paliers = { atq: 0, def: 0, mag: 0, res: 0, vit: 0, chance: 0 };
   ancien.flags.garde = 0;
   ancien.flags.tourDemarre = 0;
+  if (!force) etat.stats[cote].changements += 1;
   evts.push({ t: 'SWITCH', cote, deUid: ancien.uid, versUid: nouveau.uid });
   evts.push({
     t: 'MESSAGE',
@@ -482,6 +489,7 @@ function lancerSort(
   const parfait = faces > 1 && jet === faces;
   // Le dé parfait se voit sur le dé lui-même : pas de message en doublon.
   evts.push({ t: 'DE', faces, resultat: jet, coeff: Math.round(coeff * 100) / 100, parfait });
+  if (parfait) etat.stats[cote].desParfaits += 1;
 
   etat.rng = rng.state;
 
@@ -611,6 +619,11 @@ function resoudreDegats(
 
   const final = Math.max(1, Math.round(degats));
   const inflige = infligerBrut(etat, coteAdv, def, final, evts, efficacite, critique);
+
+  const st = etat.stats[cote];
+  if (inflige > st.meilleurCoup) st.meilleurCoup = inflige;
+  if (critique) st.critiques += 1;
+  if (efficacite === 'SUPER') st.superEfficaces += 1;
 
   // Effets après dégâts.
   if (att.passifId === 'brasier' && critique && !def.ko) {

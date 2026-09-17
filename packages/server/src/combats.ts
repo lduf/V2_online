@@ -427,6 +427,18 @@ async function cloturer(db: Pilote, c: CombatCharge): Promise<void> {
       }
     }
 
+    // Progression des objectifs : premiers pas et contrats du jour.
+    {
+      const { avancer } = await import('./objectifs.js');
+      await avancer(db, compte.id, {
+        type: 'COMBAT',
+        victoire,
+        mode: c.mode,
+        stats: c.etat.stats[cote],
+        elements: c.etat.equipes[cote].unites.map((u) => u.element),
+      });
+    }
+
     resultats[cote] = {
       credits: recompenses.credits,
       eclats: recompenses.eclats,

@@ -48,6 +48,8 @@ export function Combat({ combatId }: { combatId: string }) {
   const [flash, setFlash] = useState<'critique' | 'super' | 'fatal' | null>(null);
   const [fatal, setFatal] = useState(false);
   const [banniere, setBanniere] = useState<{ texte: string; cle: number } | null>(null);
+  /** Conseil contextuel, montré une seule fois par compte et par situation. */
+  const [conseil, setConseil] = useState<{ cle: string; texte: string } | null>(null);
   const [enLecture, setEnLecture] = useState(false);
   const [vitesse, setVitesse] = useState<number>(
     Number(localStorage.getItem('arene.vitesse') ?? 1.6),
@@ -76,6 +78,31 @@ export function Combat({ combatId }: { combatId: string }) {
     if (!v) return '';
     return v.equipes[cote].unites[v.equipes[cote].actif]?.uid ?? '';
   };
+
+  /**
+   * Les conseils apparaissent au moment où la situation se produit, pas dans
+   * un panneau d'aide que personne ne lit. Chacun n'est montré qu'une fois.
+   */
+  const conseillerRef = useRef<(cle: string, texte: string) => void>(() => undefined);
+
+  const conseiller = (cle: string, texte: string): void => {
+    let vus: string[] = [];
+    try {
+      vus = JSON.parse(localStorage.getItem('arene.coach') ?? '[]') as string[];
+    } catch {
+      vus = [];
+    }
+    if (vus.includes(cle)) return;
+    vus.push(cle);
+    try {
+      localStorage.setItem('arene.coach', JSON.stringify(vus));
+    } catch {
+      /* navigation privée : le conseil réapparaîtra, ce n'est pas grave */
+    }
+    setConseil({ cle, texte });
+  };
+
+  conseillerRef.current = conseiller;
 
   const pousserFlottant = (texte: string, ton: string): void => {
     const cle = ++cleFlottant.current;
@@ -134,6 +161,13 @@ export function Combat({ combatId }: { combatId: string }) {
       case 'DE':
         setDe({ faces: e.faces, resultat: e.resultat, parfait: e.parfait, cle: Date.now() });
         jouer(e.parfait ? 'deParfait' : 'de');
+        conseiller(
+          'de',
+          `Le dé décide de la puissance du sort. Ici un d${e.faces} : peu de faces, c’est fiable ; beaucoup, c’est la loterie. Tomber sur la face maximale déclenche un coup critique.`,
+        );
+        if (e.parfait) {
+          conseiller('de_parfait', 'Dé parfait ! La face maximale : le coup part en critique.');
+        }
         break;
       case 'RATE':
         pousserFlottant('RATÉ', 'info');
@@ -180,6 +214,10 @@ export function Combat({ combatId }: { combatId: string }) {
           setTimeout(() => monte.current && setFlash(null), 220);
         }
         if (e.efficacite === 'SUPER') {
+          conseiller(
+            'super',
+            'Super efficace : +50 % de dégâts. Chaque élément est fort contre un autre — le Codex a la table complète.',
+          );
           setBanniere({ texte: 'SUPER EFFICACE', cle: Date.now() });
           setTimeout(() => monte.current && setBanniere(null), 900);
         }
@@ -200,6 +238,10 @@ export function Combat({ combatId }: { combatId: string }) {
         break;
       case 'KO':
         setPose((p) => ({ ...p, [e.uniteUid]: 'ko' }));
+        conseiller(
+          'ko',
+          'Un combattant à terre est remplacé par un autre de ton équipe. Il ne revient pas de ce combat.',
+        );
         jouer('ko');
         setSecousse(22);
         setTimeout(() => monte.current && setSecousse(0), 400);
@@ -295,6 +337,16 @@ export function Combat({ combatId }: { combatId: string }) {
     return () => clearInterval(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [etat?.vue.auTour, etat?.termine, combatId]);
+
+  // Premier tour jouable : on explique l'énergie au moment où elle compte.
+  useEffect(() => {
+    if (!etat || etat.termine || enLecture) return;
+    if (etat.vue.auTour !== etat.vue.moi) return;
+    conseillerRef.current(
+      'premier_tour',
+      'À toi. Chaque sort coûte de l’énergie : tu en regagnes 22 par tour, et l’attaque de base en rend 30 de plus. Impossible d’enchaîner ses meilleurs sorts indéfiniment.',
+    );
+  }, [etat, enLecture]);
 
   // L'écran de fin n'apparaît qu'une fois toutes les animations jouées.
   useEffect(() => {
@@ -414,6 +466,16 @@ export function Combat({ combatId }: { combatId: string }) {
           </button>
         )}
       </div>
+
+      {conseil && (
+        <div className="coach">
+          <span className="coach__tete">🎓</span>
+          <p>{conseil.texte}</p>
+          <button className="bouton bouton--fantome" onClick={() => setConseil(null)}>
+            Compris
+          </button>
+        </div>
+      )}
 
       {!etat.termine && (
         <PanneauActions

@@ -277,6 +277,15 @@ export interface EquipeCombat {
 
 export type PhaseCombat = 'CHOIX' | 'TERMINE';
 
+/** Ce qu'un camp a accompli pendant le combat, pour les objectifs. */
+export interface StatsCote {
+  desParfaits: number;
+  meilleurCoup: number;
+  critiques: number;
+  superEfficaces: number;
+  changements: number;
+}
+
 export type Cote = 0 | 1;
 
 export interface EtatCombat {
@@ -296,6 +305,8 @@ export interface EtatCombat {
   journal: EvtCombat[];
   /** Nombre de rounds avant match nul forcé. */
   limiteRounds: number;
+  /** Compteurs par camp, alimentés au fil du combat. */
+  stats: [StatsCote, StatsCote];
 }
 
 export type BattleAction =

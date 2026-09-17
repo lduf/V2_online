@@ -3318,7 +3318,7 @@ s {
 
 /* ─────────────────────────── Mobile ─────────────────────────── */
 
-@media (max-width: 1200px) {
+@media (max-width: 1400px) {
   .nav button i {
     display: none;
   }
@@ -4806,4 +4806,300 @@ s {
 .bareme.est-atteint {
   opacity: 1;
   border-color: var(--vert);
+}
+
+/* ==========================================================================
+   Onboarding, objectifs et contrats
+   ========================================================================== */
+
+.nav__pastille {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 3px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.6rem;
+  font-weight: 800;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 0 0 2px var(--fond);
+}
+
+.nav button {
+  position: relative;
+}
+
+/* L'introduction d'écran, montrée une seule fois par compte. */
+
+.intro-ecran {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  padding: 1rem 1.1rem;
+  border-radius: var(--rayon);
+  border: 1px solid rgba(255, 79, 163, 0.4);
+  background: linear-gradient(135deg, rgba(255, 79, 163, 0.14), rgba(127, 182, 255, 0.08));
+  animation: entree-toast 320ms var(--transition);
+}
+
+.intro-ecran__corps {
+  flex: 1;
+  min-width: 240px;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.intro-ecran__corps strong {
+  font-size: 1.05rem;
+}
+
+.intro-ecran__corps p {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: var(--texte-doux);
+}
+
+.intro-ecran__corps p + p {
+  margin-top: 0.4rem;
+}
+
+/* Le fil d'objectifs */
+
+.objectifs {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.objectif {
+  display: grid;
+  grid-template-columns: 2rem 1fr auto;
+  gap: 0.7rem;
+  align-items: center;
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--rayon-s);
+  background: rgba(0, 0, 0, 0.26);
+  border-left: 3px solid var(--texte-faible);
+  transition: var(--transition);
+}
+
+.objectif.est-fait {
+  border-left-color: var(--or);
+  background: rgba(255, 212, 94, 0.1);
+}
+
+.objectif.est-reclame {
+  opacity: 0.45;
+  border-left-color: var(--vert);
+}
+
+.objectif__emoji {
+  font-size: 1.3rem;
+  text-align: center;
+}
+
+.objectif__corps {
+  min-width: 0;
+  display: grid;
+  gap: 0.1rem;
+}
+
+.objectif__corps strong {
+  font-size: 0.9rem;
+}
+
+.objectif__corps small {
+  font-size: 0.78rem;
+  color: var(--texte-doux);
+}
+
+.objectif__barre {
+  position: relative;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.5);
+  margin-top: 0.25rem;
+  overflow: visible;
+}
+
+.objectif__barre i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--accent-2), var(--accent));
+  transition: width 400ms var(--transition);
+}
+
+.objectif__barre b {
+  position: absolute;
+  right: 0;
+  top: -1.05rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.62rem;
+  color: var(--texte-faible);
+  font-weight: 400;
+}
+
+.objectif__action .bouton {
+  padding: 0.35rem 0.7rem;
+  font-size: 0.8rem;
+}
+
+.objectif__gain {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  color: var(--texte-faible);
+  white-space: nowrap;
+}
+
+.objectif__coche {
+  color: var(--vert);
+  font-weight: 800;
+}
+
+/* Récompense de connexion */
+
+.connexion-jour {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.connexion-jour > div:first-child {
+  flex: 1;
+  min-width: 200px;
+}
+
+.connexion-jour h3 {
+  margin-bottom: 0.2rem;
+}
+
+.connexion-jour .panneau__aide {
+  margin: 0;
+}
+
+.connexion-jour__paliers {
+  display: flex;
+  gap: 0.3rem;
+}
+
+.palier {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--panneau-bord);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.74rem;
+  color: var(--texte-faible);
+}
+
+.palier.est-passe {
+  border-color: var(--vert);
+  color: var(--vert);
+}
+
+.palier.est-courant {
+  border-color: var(--accent);
+  background: rgba(255, 79, 163, 0.2);
+  color: #fff;
+  animation: pulsation 1.6s ease-in-out infinite;
+}
+
+.palier.est-booster {
+  border-color: var(--or);
+  color: var(--or);
+}
+
+@media (min-width: 980px) {
+  .panneau--connexion,
+  .panneau--objectifs {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Choix du champion à l'inscription */
+
+.starters {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.starter {
+  display: flex;
+  gap: 0.7rem;
+  align-items: center;
+  text-align: left;
+  padding: 0.6rem;
+  border-radius: var(--rayon);
+  border: 1px solid var(--panneau-bord);
+  background: rgba(0, 0, 0, 0.26);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.starter:hover {
+  border-color: var(--el);
+  transform: translateY(-2px);
+}
+
+.starter.est-choisi {
+  border-color: var(--accent);
+  background: rgba(255, 79, 163, 0.12);
+  box-shadow: 0 0 0 1px rgba(255, 79, 163, 0.4);
+}
+
+.starter__texte {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.starter__texte strong {
+  font-size: 0.92rem;
+  color: var(--el);
+}
+
+.starter__texte small {
+  font-size: 0.78rem;
+  color: var(--texte-doux);
+  line-height: 1.45;
+}
+
+/* Le coach en combat */
+
+.coach {
+  display: flex;
+  gap: 0.7rem;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 0.7rem 0.9rem;
+  border-radius: var(--rayon);
+  border: 1px solid rgba(255, 212, 94, 0.45);
+  background: linear-gradient(135deg, rgba(255, 212, 94, 0.14), rgba(255, 79, 163, 0.08));
+  animation: entree-toast 300ms var(--transition);
+}
+
+.coach__tete {
+  font-size: 1.5rem;
+}
+
+.coach p {
+  flex: 1;
+  min-width: 220px;
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.5;
 }

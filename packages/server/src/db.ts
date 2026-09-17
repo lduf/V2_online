@@ -63,6 +63,9 @@ export interface LigneCompte {
   cree_le: number;
   vu_le: number;
   essence: number;
+  connexion_jour: number;
+  connexion_palier: number;
+  vu_intro: string | null;
 }
 
 export interface LignePerso {
@@ -115,5 +118,7 @@ export function normaliserCompte(c: LigneCompte): LigneCompte {
     cree_le: nombre(c.cree_le),
     vu_le: nombre(c.vu_le),
     essence: nombre(c.essence),
+    connexion_jour: nombre(c.connexion_jour),
+    connexion_palier: nombre(c.connexion_palier),
   };
 }

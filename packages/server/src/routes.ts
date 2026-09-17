@@ -13,6 +13,7 @@ import {
   numeroSaison,
   Rng,
   SORTS_PAR_ID,
+  STARTERS_PAR_ID,
   seedAleatoire,
   TAILLE_EQUIPE,
   tirerChromatique,
@@ -80,6 +81,13 @@ import {
 } from './combats.js';
 import { equipeBot, type ModeMatch } from '@arene/engine';
 import {
+  avancer,
+  marquerIntroVue,
+  reclamer,
+  reclamerConnexion,
+  vueObjectifs,
+} from './objectifs.js';
+import {
   abandonnerTour,
   choisirBonus,
   demarrerTour,
@@ -114,11 +122,13 @@ function a(
 routes.post(
   '/auth/inscription',
   a(async (req, res) => {
-    const { pseudo, motDePasse } = req.body ?? {};
+    const { pseudo, motDePasse, starter } = req.body ?? {};
     const v = validerInscription(pseudo, motDePasse);
     if (!v.ok) return erreur(res, 400, v.message);
     if (await compteParPseudo(pseudo)) return erreur(res, 409, 'Ce pseudo est déjà pris.');
-    const compte = await creerCompte(pseudo, hacher(motDePasse));
+    const starterId =
+      typeof starter === 'string' && STARTERS_PAR_ID[starter] ? starter : undefined;
+    const compte = await creerCompte(pseudo, hacher(motDePasse), starterId);
     res.json({ token: signerToken(compte.id), compte: publicCompte(compte) });
   }),
 );
@@ -173,7 +183,9 @@ routes.put(
     if (new Set(membres).size !== membres.length) {
       return erreur(res, 400, 'Impossible d’aligner deux fois le même personnage.');
     }
-    await definirEquipe(await base(), compteId, membres);
+    const db = await base();
+    await definirEquipe(db, compteId, membres);
+    await avancer(db, compteId, { type: 'COMPOSER_EQUIPE' });
     res.json({ equipe: membres });
   }),
 );
@@ -258,7 +270,11 @@ routes.put(
       perso.surnom = surnom ?? undefined;
     }
 
-    await majPerso(await base(), compteId, perso);
+    const db = await base();
+    await majPerso(db, compteId, perso);
+    if (sorts !== undefined && perso.sorts.some((x) => !!x)) {
+      await avancer(db, compteId, { type: 'EQUIPER_SORT' });
+    }
     res.json({ perso });
   }),
 );
@@ -388,6 +404,7 @@ routes.post(
       }
     });
 
+    await avancer(db, compte.id, { type: 'BOOSTER', nombre: boosters.length });
     res.json({ boosters, ...(await profilComplet(compte.id)) });
   }),
 );
@@ -553,6 +570,40 @@ routes.post(
     if (!r.ok || !r.combat) return erreur(res, 400, r.message ?? 'Abandon impossible.');
     const cote = coteDe(r.combat, req.compte!.id)!;
     res.json(vueClient(r.combat, cote, await evenementsDepuis(r.combat.id, depuis), depuis));
+  }),
+);
+
+// ───────────────────────── Objectifs & onboarding ─────────────────────────
+
+routes.get(
+  '/objectifs',
+  a(async (req, res) => {
+    res.json(await vueObjectifs(req.compte!.id));
+  }),
+);
+
+routes.post(
+  '/objectifs/:id/reclamer',
+  a(async (req, res) => {
+    const r = await reclamer(req.compte!.id, req.params.id);
+    if (r.erreur) return erreur(res, 400, r.erreur);
+    res.json({ ...r, ...(await profilComplet(req.compte!.id)) });
+  }),
+);
+
+routes.post(
+  '/connexion/reclamer',
+  a(async (req, res) => {
+    const r = await reclamerConnexion(req.compte!.id);
+    if (r.erreur) return erreur(res, 400, r.erreur);
+    res.json({ ...r, ...(await profilComplet(req.compte!.id)) });
+  }),
+);
+
+routes.post(
+  '/intro/:ecran',
+  a(async (req, res) => {
+    res.json({ vuIntro: await marquerIntroVue(req.compte!.id, req.params.ecran) });
   }),
 );
 

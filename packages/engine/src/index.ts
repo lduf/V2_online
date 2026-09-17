@@ -16,3 +16,4 @@ export { ESPECES, ESPECES_PAR_ID, getEspece } from './data/especes.js';
 export * from './roster.js';
 export * from './variantes.js';
 export * from './tour.js';
+export * from './objectifs.js';

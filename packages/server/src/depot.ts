@@ -119,7 +119,11 @@ export const CREDITS_DEPART = 2500;
 export const ECLATS_DEPART = 60;
 
 /** Création d'un compte avec son roster de départ et une équipe pré-remplie. */
-export async function creerCompte(pseudo: string, hash: string): Promise<LigneCompte> {
+export async function creerCompte(
+  pseudo: string,
+  hash: string,
+  starterId?: string,
+): Promise<LigneCompte> {
   const db = await base();
   const id = uid('c');
   const maintenant = Date.now();
@@ -141,7 +145,7 @@ export async function creerCompte(pseudo: string, hash: string): Promise<LigneCo
       ],
     );
     const rng = new Rng(seedAleatoire());
-    const { persos, sorts } = rosterDepart(rng);
+    const { persos, sorts } = rosterDepart(rng, starterId);
     for (const s of sorts.values()) await ajouterSort(tx, id, s);
     for (const p of persos) await ajouterPerso(tx, id, p);
     await definirEquipe(

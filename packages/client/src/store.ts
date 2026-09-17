@@ -28,7 +28,7 @@ interface EtatApp {
 
   initialiser: () => Promise<void>;
   connexion: (pseudo: string, mdp: string) => Promise<void>;
-  inscription: (pseudo: string, mdp: string) => Promise<void>;
+  inscription: (pseudo: string, mdp: string, starter?: string) => Promise<void>;
   deconnexion: () => void;
   rafraichir: () => Promise<void>;
   appliquerProfil: (p: Profil) => void;
@@ -78,8 +78,8 @@ export const useApp = create<EtatApp>((set, get) => ({
     jouer('clic');
   },
 
-  async inscription(pseudo, mdp) {
-    const r = await api.inscription(pseudo, mdp);
+  async inscription(pseudo, mdp, starter) {
+    const r = await api.inscription(pseudo, mdp, starter);
     definirToken(r.token);
     const profil = await api.moi();
     set({ connecte: true, profil, ecran: 'accueil' });
