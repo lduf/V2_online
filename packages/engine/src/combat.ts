@@ -23,7 +23,7 @@ export const MULT_DEGATS = 2.3;
 export const ENERGIE_PAR_TOUR = 22;
 export const ENERGIE_ATTAQUE = 30;
 export const ENERGIE_GARDE = 34;
-export const LIMITE_ROUNDS = 32;
+export const LIMITE_ROUNDS = 30;
 export const MULT_CRITIQUE = 1.65;
 export const CRIT_MAX = 60;
 
@@ -58,9 +58,11 @@ const ATTAQUE_BASIQUE: SortPret = {
 };
 
 /** Multiplicateur de dégâts appliqué en fin de partie (mort subite progressive). */
+export const ROUND_ESCALADE = 14;
+
 export function multiplicateurEscalade(round: number): number {
-  if (round < 18) return 1;
-  return Math.min(2.6, 1 + 0.16 * (round - 17));
+  if (round < ROUND_ESCALADE) return 1;
+  return Math.min(3, 1 + 0.18 * (round - ROUND_ESCALADE + 1));
 }
 
 export function autreCote(c: Cote): Cote {
@@ -701,7 +703,7 @@ function soigner(
   let m = montant;
   if (u.passifId === 'second_souffle') m *= 1.25;
   // Pendant l'escalade, les soins ne suivent pas : impossible de temporiser.
-  if (etat.round >= 18) m *= Math.max(0.35, 1 - 0.09 * (etat.round - 17));
+  if (etat.round >= ROUND_ESCALADE) m *= Math.max(0.3, 1 - 0.1 * (etat.round - ROUND_ESCALADE + 1));
   if (aStatut(u, 'MALEDICTION')) m *= 0.5;
   const reel = Math.min(u.pvMax - u.pv, Math.round(m));
   if (reel <= 0) return 0;

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import {
   BANNIERES,
+  ESPECES,
   ESPECES_PAR_ID,
   INFO_ELEMENTS,
   ITEMS_PAR_ID,
@@ -37,10 +38,23 @@ export function Invocation() {
   const b = BANNIERES[banniere];
   const pitie = banniere === 'STANDARD' ? profil.compte.pitie_standard : profil.compte.pitie_legendaire;
 
-  const invoquer = async (nombre: 1 | 10) => {
+  // Vitrine : les personnages réellement accessibles sur cette bannière,
+  // du plus rare au plus commun.
+  const ordre = ['LEGENDAIRE', 'EPIQUE', 'RARE', 'COMMUN'];
+  const vitrine = ESPECES.filter((e) => (b.poids[e.rarete] ?? 0) > 0).sort(
+    (x, y) => ordre.indexOf(x.rarete) - ordre.indexOf(y.rarete),
+  );
+  const possedes = new Set(profil.persos.map((p) => p.especeId));
+
+  const abordable = (nombre: 1 | 10): boolean => {
     const cout = nombre === 10 ? b.coutDix : b.coutUnite;
-    if ((cout.credits ?? 0) > profil.compte.credits) return notifier('Pas assez de crédits.', 'mal');
-    if ((cout.eclats ?? 0) > profil.compte.eclats) return notifier('Pas assez d’éclats.', 'mal');
+    return (
+      (cout.credits ?? 0) <= profil.compte.credits && (cout.eclats ?? 0) <= profil.compte.eclats
+    );
+  };
+
+  const invoquer = async (nombre: 1 | 10) => {
+    if (!abordable(nombre)) return notifier('Pas assez de ressources pour ce tirage.', 'mal');
 
     setAnime(true);
     setResultats(null);
@@ -100,12 +114,21 @@ export function Invocation() {
             </p>
           </div>
           <div className="banniere__boutons">
-            <button className="bouton bouton--primaire" onClick={() => invoquer(1)} disabled={anime}>
+            <button
+              className="bouton bouton--primaire"
+              onClick={() => invoquer(1)}
+              disabled={anime || !abordable(1)}
+            >
               ×1 — {b.coutUnite.credits ? `💰 ${b.coutUnite.credits}` : `✨ ${b.coutUnite.eclats}`}
+              {!abordable(1) && <small>pas assez</small>}
             </button>
-            <button className="bouton bouton--primaire" onClick={() => invoquer(10)} disabled={anime}>
+            <button
+              className="bouton bouton--primaire"
+              onClick={() => invoquer(10)}
+              disabled={anime || !abordable(10)}
+            >
               ×10 — {b.coutDix.credits ? `💰 ${b.coutDix.credits}` : `✨ ${b.coutDix.eclats}`}
-              <small>1 rare garanti</small>
+              <small>{abordable(10) ? '1 rare garanti' : 'pas assez'}</small>
             </button>
           </div>
         </div>
@@ -124,6 +147,27 @@ export function Invocation() {
             ))}
           </div>
         )}
+
+        <h3 className="invocation__titre-vitrine">
+          Personnages accessibles sur cette bannière ({vitrine.length})
+        </h3>
+        <div className="vitrine">
+          {vitrine.map((e) => (
+            <div
+              key={e.id}
+              className={`vitrine__perso rarete--${e.rarete.toLowerCase()} ${
+                possedes.has(e.id) ? 'est-possede' : ''
+              }`}
+              style={{ '--el': INFO_ELEMENTS[e.element].couleur } as React.CSSProperties}
+              title={`${e.nom} — ${e.titre} · ${e.passif.nom}`}
+            >
+              <Avatar art={e.art} element={e.element} taille={64} pose="portrait" />
+              <strong>{e.nom}</strong>
+              <Rarete rarete={e.rarete} />
+              {possedes.has(e.id) && <span className="vitrine__coche">✓</span>}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
