@@ -50,7 +50,15 @@ export function versSort(l: LigneSort): SortPossede {
 // ───────────────────────────── Comptes ─────────────────────────────
 
 export async function compteParId(id: string): Promise<LigneCompte | undefined> {
-  const db = await base();
+  return compteParIdAvec(await base(), id);
+}
+
+/**
+ * Variante prenant le pilote en argument. Indispensable à l'intérieur d'une
+ * transaction : passer par le pool réclamerait une seconde connexion, ce qui
+ * peut bloquer indéfiniment quand le pool est étroit (cas du serverless).
+ */
+export async function compteParIdAvec(db: Pilote, id: string): Promise<LigneCompte | undefined> {
   const l = await db.get<LigneCompte>('SELECT * FROM comptes WHERE id = ?', [id]);
   return l ? normaliserCompte(l) : undefined;
 }

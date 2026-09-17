@@ -27,6 +27,7 @@ import { base, nombre } from './db.js';
 import {
   carteSortsDe,
   compteParId,
+  compteParIdAvec,
   enregistrerMatch,
   equipeDe,
   majPerso,
@@ -359,7 +360,7 @@ async function cloturer(db: Pilote, c: CombatCharge): Promise<void> {
   for (const cote of [0, 1] as Cote[]) {
     const j = c.joueurs[cote];
     if (!j.compteId) continue;
-    const compte = await compteParId(j.compteId);
+    const compte = await compteParIdAvec(db, j.compteId);
     if (!compte) continue;
 
     const victoire = vainqueur === cote;

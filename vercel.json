@@ -6,7 +6,7 @@
   "framework": null,
   "functions": {
     "api/index.mjs": {
-      "maxDuration": 15,
+      "maxDuration": 10,
       "memory": 1024
     }
   },
