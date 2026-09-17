@@ -18,7 +18,7 @@
     "start": "npm run build && node packages/server/dist/index.js",
     "typecheck": "npm run typecheck -w @arene/engine && npm run typecheck -w @arene/server && npm run typecheck -w @arene/client",
     "test": "npm run test -w @arene/engine",
-    "vercel-build": "npm run build:engine && npm run build -w @arene/client && npm run build -w @arene/server"
+    "vercel-build": "npm run build:engine && npm run build -w @arene/client && npm run build -w @arene/server && node outils/verifier-build.mjs"
   },
   "devDependencies": {
     "concurrently": "^9.1.2",

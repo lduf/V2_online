@@ -1,0 +1,7 @@
+# Le projet Java d'origine n'a rien à faire dans le déploiement
+legacy/
+# Données locales
+donnees/
+*.db
+*.db-wal
+*.db-shm
