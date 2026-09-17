@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import {
   COUT_REROLL_GENES_SORT,
   ELEMENTS,
+  valeurDissolutionSort,
   ESPECES,
   ESPECES_PAR_ID,
   INFO_ELEMENTS,
@@ -27,6 +28,9 @@ export function Collection() {
   const [onglet, setOnglet] = useState<Onglet>('personnages');
   const [filtre, setFiltre] = useState('');
   const [detail, setDetail] = useState<string | null>(null);
+  // Le clic sur une carte de sort fait deux choses opposées : on demande
+  // laquelle plutôt que de cacher la dissolution dans un menu contextuel.
+  const [actionSort, setActionSort] = useState<'genes' | 'dissoudre'>('genes');
 
   const possedes = useMemo(() => new Set(profil.persos.map((p) => p.especeId)), [profil.persos]);
   const sortsPossedes = useMemo(() => new Set(profil.sorts.map((s) => s.defId)), [profil.sorts]);
@@ -42,6 +46,32 @@ export function Collection() {
       jouer('invocation');
     } catch (e) {
       notifier(e instanceof ErreurApi ? e.message : 'Opération impossible.', 'mal');
+    }
+  };
+
+  /** Un sort équipé ne se dissout pas : il faut d'abord le retirer dans l'Atelier. */
+  const sortsEquipes = useMemo(
+    () => new Set(profil.persos.flatMap((p) => p.sorts.filter((x): x is string => !!x))),
+    [profil.persos],
+  );
+
+  const dissoudreSort = async (uid: string) => {
+    const sort = profil.sorts.find((s) => s.uid === uid);
+    if (!sort) return;
+    if (sortsEquipes.has(uid)) {
+      return notifier('Ce sort est équipé — retire-le d’abord dans l’Atelier.', 'mal');
+    }
+    const gain = valeurDissolutionSort(sort);
+    if (!confirm(`Dissoudre ${SORTS_PAR_ID[sort.defId].nom} contre ${gain} essence ? C’est définitif.`)) {
+      return;
+    }
+    try {
+      const r = await api.dissoudreSort(uid);
+      appliquerProfil(r);
+      notifier(`+${r.gain} essence`, 'bien');
+      jouer('achat');
+    } catch (e) {
+      notifier(e instanceof ErreurApi ? e.message : 'Dissolution impossible.', 'mal');
     }
   };
 
@@ -107,8 +137,25 @@ export function Collection() {
           <>
             <p className="panneau__aide">
               Tes {profil.sorts.length} exemplaires. Chacun a ses propres gènes : deux « Boule de
-              Feu » ne se valent pas. Clique sur une carte pour en retirer les gènes.
+              Feu » ne se valent pas.{' '}
+              {actionSort === 'genes'
+                ? `Clique sur une carte pour en retirer les gènes (${COUT_REROLL_GENES_SORT} 💰).`
+                : 'Clique sur une carte pour la dissoudre en essence. Les sorts équipés sont protégés.'}
             </p>
+            <div className="onglets onglets--compact">
+              <button
+                className={actionSort === 'genes' ? 'est-actif' : ''}
+                onClick={() => setActionSort('genes')}
+              >
+                🎲 Retirer les gènes
+              </button>
+              <button
+                className={actionSort === 'dissoudre' ? 'est-actif' : ''}
+                onClick={() => setActionSort('dissoudre')}
+              >
+                💠 Dissoudre
+              </button>
+            </div>
             <div className="grille-cartes">
               {profil.sorts
                 .filter((s) => correspond(SORTS_PAR_ID[s.defId]?.nom ?? ''))
@@ -117,7 +164,10 @@ export function Collection() {
                     key={s.uid}
                     donnees={{ kind: 'SORT', defId: s.defId, sort: s }}
                     taille="mini"
-                    onClick={() => rerollSort(s.uid)}
+                    estompee={actionSort === 'dissoudre' && sortsEquipes.has(s.uid)}
+                    onClick={() =>
+                      actionSort === 'genes' ? rerollSort(s.uid) : dissoudreSort(s.uid)
+                    }
                   />
                 ))}
               {profil.sorts.length === 0 && <Vide texte="Aucun sort." emoji="📜" />}

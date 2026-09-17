@@ -220,17 +220,22 @@ export function CarteSortPossede({
 export function Ressources({
   credits,
   eclats,
+  essence,
 }: {
   credits: number;
   eclats: number;
+  essence: number;
 }) {
   return (
     <div className="ressources">
-      <span className="ressource ressource--credits" title="Crédits">
+      <span className="ressource ressource--credits" title="Crédits — combats et boutique">
         💰 {credits.toLocaleString('fr-FR')}
       </span>
-      <span className="ressource ressource--eclats" title="Éclats">
+      <span className="ressource ressource--eclats" title="Éclats — invocations">
         ✨ {eclats.toLocaleString('fr-FR')}
+      </span>
+      <span className="ressource ressource--essence" title="Essence — dissolution des doublons">
+        💠 {essence.toLocaleString('fr-FR')}
       </span>
     </div>
   );

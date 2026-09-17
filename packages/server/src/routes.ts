@@ -1,7 +1,9 @@
 import { Router, type NextFunction, type Request, type Response } from 'express';
 import {
   BANNIERES,
-  COUT_HYPER_ENTRAINEMENT,
+  COUT_GENE_ESSENCE,
+  COUT_RESPEC_TALENT,
+  coutFabrication,
   COUT_REROLL_GENES,
   COUT_REROLL_GENES_SORT,
   DIVISIONS,
@@ -21,6 +23,11 @@ import {
   tirerIvsSort,
   tirerNature,
   tirerPrisme,
+  PALIERS_TALENT,
+  talentsDuPerso,
+  valeurDissolutionPerso,
+  valeurDissolutionSort,
+  PLANCHER_IV_FABRICATION,
   TOUTES_STATS,
   uid,
   validerEquipe,
@@ -308,17 +315,141 @@ routes.post(
     const perso = await persoDe(compte.id, req.params.uid);
     if (!perso) return erreur(res, 404, 'Personnage introuvable.');
     if (perso.ivs[stat] >= IV_MAX) return erreur(res, 400, 'Ce gène est déjà parfait.');
-    if (compte.eclats < COUT_HYPER_ENTRAINEMENT) return erreur(res, 402, 'Pas assez d’éclats.');
+    if (compte.essence < COUT_GENE_ESSENCE) {
+      return erreur(res, 402, `Il faut ${COUT_GENE_ESSENCE} essence — dissous des doublons.`);
+    }
     perso.ivs[stat] = IV_MAX;
     const db = await base();
     await db.tx(async (tx) => {
-      await tx.run('UPDATE comptes SET eclats = eclats - ? WHERE id = ?', [
-        COUT_HYPER_ENTRAINEMENT,
+      await tx.run('UPDATE comptes SET essence = essence - ? WHERE id = ?', [
+        COUT_GENE_ESSENCE,
         compte.id,
       ]);
       await majPerso(tx, compte.id, perso);
     });
     res.json(await profilComplet(compte.id));
+  }),
+);
+
+// ───────────────────────────── Talents ─────────────────────────────
+
+routes.post(
+  '/persos/:uid/talent',
+  a(async (req, res) => {
+    const compte = req.compte!;
+    const palier = Number(req.body?.palier);
+    const talentId = String(req.body?.talentId ?? '');
+    if (!PALIERS_TALENT.includes(palier as (typeof PALIERS_TALENT)[number])) {
+      return erreur(res, 400, 'Palier inconnu.');
+    }
+    const perso = await persoDe(compte.id, req.params.uid);
+    if (!perso) return erreur(res, 404, 'Personnage introuvable.');
+
+    const etat = talentsDuPerso(perso).find((t) => t.palier === palier)!;
+    if (!etat.debloque) return erreur(res, 400, `Palier ${palier} pas encore atteint.`);
+    if (!etat.choix.some((t) => t.id === talentId)) {
+      return erreur(res, 400, 'Ce talent n’est pas proposé à ce personnage.');
+    }
+    if (etat.choisi?.id === talentId) return erreur(res, 400, 'Ce talent est déjà actif.');
+
+    // Le premier choix est offert ; se raviser coûte de l'essence.
+    const cout = etat.choisi ? COUT_RESPEC_TALENT : 0;
+    if (compte.essence < cout) {
+      return erreur(res, 402, `Changer d’avis coûte ${COUT_RESPEC_TALENT} essence.`);
+    }
+
+    const autres = (perso.talents ?? []).filter(
+      (id) => !etat.choix.some((t) => t.id === id),
+    );
+    perso.talents = [...autres, talentId];
+
+    const db = await base();
+    await db.tx(async (tx) => {
+      if (cout > 0) {
+        await tx.run('UPDATE comptes SET essence = essence - ? WHERE id = ?', [cout, compte.id]);
+      }
+      await majPerso(tx, compte.id, perso);
+    });
+    res.json({ cout, ...(await profilComplet(compte.id)) });
+  }),
+);
+
+// ───────────────────────────── Essence ─────────────────────────────
+
+routes.post(
+  '/persos/:uid/dissoudre',
+  a(async (req, res) => {
+    const compte = req.compte!;
+    const perso = await persoDe(compte.id, req.params.uid);
+    if (!perso) return erreur(res, 404, 'Personnage introuvable.');
+
+    const equipe = await equipeDe(compte.id);
+    if (equipe.includes(perso.uid)) {
+      return erreur(res, 400, 'Retire-le d’abord de ton équipe.');
+    }
+    const tous = await persosDe(compte.id);
+    if (tous.length <= 3) {
+      return erreur(res, 400, 'Il te faut au moins trois personnages pour aligner une équipe.');
+    }
+
+    const gain = valeurDissolutionPerso(perso);
+    const db = await base();
+    await db.tx(async (tx) => {
+      // Les sorts équipés sur ce personnage redeviennent libres.
+      await tx.run('DELETE FROM persos WHERE uid = ? AND compte = ?', [perso.uid, compte.id]);
+      await tx.run('UPDATE comptes SET essence = essence + ? WHERE id = ?', [gain, compte.id]);
+    });
+    res.json({ gain, ...(await profilComplet(compte.id)) });
+  }),
+);
+
+routes.post(
+  '/sorts/:uid/dissoudre',
+  a(async (req, res) => {
+    const compte = req.compte!;
+    const sort = await sortDe(compte.id, req.params.uid);
+    if (!sort) return erreur(res, 404, 'Sort introuvable.');
+
+    const porteur = (await persosDe(compte.id)).find((p) => p.sorts.includes(sort.uid));
+    if (porteur) return erreur(res, 400, 'Ce sort est équipé sur un personnage.');
+
+    const gain = valeurDissolutionSort(sort);
+    const db = await base();
+    await db.tx(async (tx) => {
+      await tx.run('DELETE FROM sorts_possedes WHERE uid = ? AND compte = ?', [
+        sort.uid,
+        compte.id,
+      ]);
+      await tx.run('UPDATE comptes SET essence = essence + ? WHERE id = ?', [gain, compte.id]);
+    });
+    res.json({ gain, ...(await profilComplet(compte.id)) });
+  }),
+);
+
+routes.post(
+  '/fabriquer',
+  a(async (req, res) => {
+    const compte = req.compte!;
+    const defId = String(req.body?.defId ?? '');
+    if (!SORTS_PAR_ID[defId]) return erreur(res, 400, 'Sort inconnu.');
+    const cout = coutFabrication(defId);
+    if (compte.essence < cout) {
+      return erreur(res, 402, `Il faut ${cout} essence pour fabriquer ce sort.`);
+    }
+    const rng = new Rng(seedAleatoire());
+    const nouveau: SortPossede = {
+      uid: uid('s'),
+      defId,
+      ivs: tirerIvsSort(rng, PLANCHER_IV_FABRICATION),
+      obtenuLe: Date.now(),
+      prisme: tirerPrisme(rng),
+    };
+    const db = await base();
+    await db.tx(async (tx) => {
+      await tx.run('UPDATE comptes SET essence = essence - ? WHERE id = ?', [cout, compte.id]);
+      await ajouterSort(tx, compte.id, nouveau);
+    });
+    res.json({ sort: nouveau, ...(await profilComplet(compte.id)) });
   }),
 );
 

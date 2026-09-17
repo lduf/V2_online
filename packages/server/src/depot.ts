@@ -36,6 +36,7 @@ export function versPerso(l: LignePerso): PersoPossede {
     itemId: l.item_id,
     obtenuLe: nombre(l.obtenu_le),
     chromatique: nombre(l.chromatique) === 1,
+    talents: l.talents ? (JSON.parse(l.talents) as string[]) : [],
   };
 }
 
@@ -80,8 +81,8 @@ export function publicCompte(c: LigneCompte) {
 
 export async function ajouterPerso(db: Pilote, compte: string, p: PersoPossede): Promise<void> {
   await db.run(
-    `INSERT INTO persos (uid, compte, espece_id, surnom, niveau, xp, ivs, evs, nature_id, sorts, item_id, obtenu_le, chromatique)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO persos (uid, compte, espece_id, surnom, niveau, xp, ivs, evs, nature_id, sorts, item_id, obtenu_le, chromatique, talents)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       p.uid,
       compte,
@@ -96,6 +97,7 @@ export async function ajouterPerso(db: Pilote, compte: string, p: PersoPossede):
       p.itemId,
       p.obtenuLe,
       p.chromatique ? 1 : 0,
+      JSON.stringify(p.talents ?? []),
     ],
   );
 }
@@ -233,7 +235,7 @@ export async function equipeDe(compte: string): Promise<string[]> {
 
 export async function majPerso(db: Pilote, compte: string, p: PersoPossede): Promise<void> {
   await db.run(
-    `UPDATE persos SET surnom = ?, niveau = ?, xp = ?, ivs = ?, evs = ?, nature_id = ?, sorts = ?, item_id = ?
+    `UPDATE persos SET surnom = ?, niveau = ?, xp = ?, ivs = ?, evs = ?, nature_id = ?, sorts = ?, item_id = ?, talents = ?
      WHERE uid = ? AND compte = ?`,
     [
       p.surnom ?? null,
@@ -244,6 +246,7 @@ export async function majPerso(db: Pilote, compte: string, p: PersoPossede): Pro
       p.natureId,
       JSON.stringify(p.sorts),
       p.itemId,
+      JSON.stringify(p.talents ?? []),
       p.uid,
       compte,
     ],

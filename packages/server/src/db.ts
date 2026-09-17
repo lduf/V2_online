@@ -82,6 +82,7 @@ export interface LignePerso {
   item_id: string | null;
   obtenu_le: number;
   chromatique: number;
+  talents: string | null;
 }
 
 export interface LigneSort {

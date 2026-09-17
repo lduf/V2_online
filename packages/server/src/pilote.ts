@@ -178,5 +178,6 @@ export function instructionsMigration(dialecte: 'sqlite' | 'postgres'): string[]
     `ALTER TABLE comptes ADD COLUMN connexion_jour ${ENTIER} NOT NULL DEFAULT 0`,
     `ALTER TABLE comptes ADD COLUMN connexion_palier ${ENTIER} NOT NULL DEFAULT 0`,
     `ALTER TABLE comptes ADD COLUMN vu_intro ${TEXTE}`,
+    `ALTER TABLE persos ADD COLUMN talents ${TEXTE}`,
   ];
 }

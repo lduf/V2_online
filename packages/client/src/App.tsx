@@ -92,7 +92,11 @@ export function App() {
         )}
 
         <div className="entete__droite">
-          <Ressources credits={profil.compte.credits} eclats={profil.compte.eclats} />
+          <Ressources
+            credits={profil.compte.credits}
+            eclats={profil.compte.eclats}
+            essence={profil.compte.essence}
+          />
           <button
             className="bouton-mini"
             title={son ? 'Couper le son' : 'Activer le son'}

@@ -16,6 +16,7 @@
   --accent-2: #7fb6ff;
   --or: #ffd45e;
   --vert: #43d17c;
+  --essence: #9ef0d6;
   --rouge: #ff5470;
   --rayon: 16px;
   --rayon-s: 10px;
@@ -220,6 +221,10 @@ s {
 
 .ressource--eclats {
   color: var(--accent-2);
+}
+
+.ressource--essence {
+  color: var(--essence);
 }
 
 .contenu {
@@ -612,7 +617,7 @@ s {
 .accueil {
   display: grid;
   gap: 1rem;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
 }
 
 @media (min-width: 980px) {
@@ -3334,6 +3339,47 @@ s {
   .entete {
     gap: 0.5rem;
   }
+  /* Sur téléphone, le logo et les ressources mangeaient toute la largeur :
+     la navigation tombait à zéro pixel et passait sous les jetons, donc plus
+     aucun onglet n'était cliquable. On lui donne sa propre ligne. */
+  .entete {
+    flex-wrap: wrap;
+    padding-bottom: 0.35rem;
+  }
+  .entete__logo {
+    order: 1;
+  }
+  .entete__droite {
+    order: 2;
+    min-width: 0;
+    gap: 0.3rem;
+  }
+  .nav {
+    order: 3;
+    flex: 0 0 100%;
+    padding-bottom: 0.15rem;
+  }
+  .ressources {
+    gap: 0.25rem;
+  }
+  .ressource {
+    font-size: 0.7rem;
+    padding: 0.3rem 0.4rem;
+  }
+  .intro-ecran__corps {
+    min-width: 0;
+  }
+  /* Le classement a huit colonnes : sur téléphone il défile dans son panneau
+     plutôt que d'élargir toute la page. */
+  .table-classement {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  .table-classement th,
+  .table-classement td {
+    padding: 0.35rem 0.45rem;
+  }
   .nav button {
     padding: 0.5rem 0.55rem;
   }
@@ -5102,4 +5148,121 @@ s {
   margin: 0;
   font-size: 0.88rem;
   line-height: 1.5;
+}
+
+/* ─────────────────────────── Talents ─────────────────────────── */
+
+.onglets__pastille {
+  display: inline-grid;
+  place-items: center;
+  min-width: 17px;
+  height: 17px;
+  margin-left: 0.35rem;
+  padding: 0 0.25rem;
+  border-radius: 999px;
+  font-size: 0.65rem;
+  background: var(--accent);
+  color: #fff;
+}
+
+.etiquette--alerte {
+  background: rgba(255, 79, 163, 0.22);
+  border-color: var(--accent);
+  color: #ffd6ea;
+}
+
+.talents__palier {
+  display: grid;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.talents__entete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.talents__choix {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 0.5rem;
+}
+
+.talent {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.65rem 0.7rem;
+  text-align: left;
+  border-radius: 12px;
+  border: 1px solid var(--panneau-bord);
+  background: rgba(255, 255, 255, 0.03);
+  color: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, transform 0.15s;
+}
+
+.talent:hover:not(:disabled) {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+
+.talent strong {
+  font-size: 0.86rem;
+}
+
+.talent small {
+  color: var(--texte-doux);
+  line-height: 1.35;
+}
+
+.talent em {
+  font-size: 0.72rem;
+  color: var(--accent);
+}
+
+.talent.est-actif {
+  border-color: var(--accent);
+  background: linear-gradient(160deg, rgba(255, 79, 163, 0.18), rgba(255, 255, 255, 0.03));
+}
+
+/* Un palier non atteint reste lisible : on grise, on ne cache pas. */
+.talent:disabled:not(.est-actif) {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ──────────────────────────── Forge ──────────────────────────── */
+
+.forge__filtres {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.9rem;
+}
+
+.bouton--mini {
+  font-size: 0.72rem;
+  padding: 0.28rem 0.6rem;
+}
+
+.bouton--mini.est-actif {
+  border-color: var(--accent);
+  background: rgba(255, 79, 163, 0.18);
+  color: #ffd6ea;
+}
+
+/* Un sort qu'au moins un personnage du joueur peut apprendre : le bandeau
+   remplace la remise et évite de forger un sort que personne ne portera. */
+.offre--utile .offre__remise {
+  background: var(--vert);
+  color: #06241a;
+  font-size: 0.6rem;
+  padding: 0.12rem 1.7rem;
+}
+
+.detail__passif--talent {
+  border-left-color: var(--accent);
+  opacity: 0.92;
 }

@@ -57,6 +57,7 @@ export interface CompteInfo {
   pseudo: string;
   credits: number;
   eclats: number;
+  essence: number;
   elo: number;
   parties: number;
   victoires: number;
@@ -219,6 +220,14 @@ export const api = {
   hyperEntrainement: (uid: string, stat: string) =>
     requete<Profil>('POST', `/persos/${uid}/hyper`, { stat }),
   rerollGenesSort: (uid: string) => requete<Profil>('POST', `/sorts/${uid}/genes`, {}),
+  dissoudrePerso: (uid: string) =>
+    requete<Profil & { gain: number }>('POST', `/persos/${uid}/dissoudre`, {}),
+  dissoudreSort: (uid: string) =>
+    requete<Profil & { gain: number }>('POST', `/sorts/${uid}/dissoudre`, {}),
+  fabriquer: (defId: string) =>
+    requete<Profil & { sort: SortPossede }>('POST', '/fabriquer', { defId }),
+  choisirTalent: (uid: string, palier: number, talentId: string) =>
+    requete<Profil & { cout: number }>('POST', `/persos/${uid}/talent`, { palier, talentId }),
 
   invoquer: (banniere: string, lot: boolean) =>
     requete<Profil & { boosters: unknown[] }>('POST', '/invocation', { banniere, lot }),

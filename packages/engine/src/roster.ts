@@ -1,4 +1,5 @@
 import { ESPECES, ESPECES_PAR_ID, getEspece } from './data/especes.js';
+import { choixTalents, PALIERS_TALENT } from './talents.js';
 import { ITEMS } from './data/items.js';
 import { getSortDef } from './data/sorts.js';
 import { Rng } from './rng.js';
@@ -64,6 +65,11 @@ export function creerPersoAleatoire(
     itemId: item,
     obtenuLe: Date.now(),
     chromatique: tirerChromatique(rng, opts.bonusVariante ?? 1),
+    // Un adversaire généré choisit ses talents au hasard : sans ça, un bot de
+    // niveau 50 se battrait avec deux paliers de retard sur le joueur.
+    talents: PALIERS_TALENT.filter((pa) => niveau >= pa).map(
+      (pa) => rng.pick(choixTalents(espece.role, pa)).id,
+    ),
   };
   return { perso, sorts };
 }

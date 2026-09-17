@@ -202,6 +202,8 @@ export interface PersoPossede {
   obtenuLe: number;
   /** Variante cosmétique « Chromatique » : robe alternative et particules. */
   chromatique?: boolean;
+  /** Talents choisis aux paliers 25 et 50 (voir `talents.ts`). */
+  talents?: string[];
 }
 
 /** Stats finales calculées pour le combat. */
@@ -242,6 +244,7 @@ export interface UniteCombat {
   element: Element;
   role: Role;
   passifId: string;
+  talents: string[];
   itemId: string | null;
   art: ArtSpec;
   chromatique: boolean;
@@ -367,6 +370,7 @@ export interface UnitePublique {
   ko: boolean;
   itemId: string | null;
   passifId: string;
+  talents: string[];
   /** Renseigné uniquement pour l'équipe du destinataire. */
   sorts?: SortPret[];
   recharges?: number[];

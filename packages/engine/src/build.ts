@@ -1,6 +1,7 @@
 import { getEspece } from './data/especes.js';
 import { calculerStats, paliersVides, preparerSort } from './stats.js';
 import { artEffectif, aSceauParfait } from './variantes.js';
+import { effetsTalents } from './talents.js';
 import type {
   EquipeCombat,
   PersoPossede,
@@ -20,6 +21,16 @@ export function construireUnite(
   const espece = getEspece(perso.especeId);
   const stats = calculerStats(perso);
 
+  // Les talents « STAT » s'appliquent sur les stats finales : c'est la seule
+  // catégorie d'effet que le moteur n'a pas besoin de relire en plein combat.
+  const talents = perso.talents ?? [];
+  for (const e of effetsTalents(talents, 'STAT')) {
+    for (const [k, pct] of Object.entries(e.stats)) {
+      const cle = k as keyof typeof stats;
+      stats[cle] = Math.round(stats[cle] * (1 + pct / 100));
+    }
+  }
+
   const sorts: SortPret[] = [];
   for (const uid of perso.sorts) {
     if (!uid) continue;
@@ -36,6 +47,7 @@ export function construireUnite(
     element: espece.element,
     role: espece.role,
     passifId: espece.passif.id,
+    talents,
     itemId: perso.itemId,
     art: artEffectif(espece.art, espece.id, perso.chromatique),
     chromatique: !!perso.chromatique,

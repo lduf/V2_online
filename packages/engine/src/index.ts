@@ -17,3 +17,5 @@ export * from './roster.js';
 export * from './variantes.js';
 export * from './tour.js';
 export * from './objectifs.js';
+export * from './essence.js';
+export * from './talents.js';
