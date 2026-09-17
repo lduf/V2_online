@@ -136,6 +136,15 @@ export function instructionsSchema(dialecte: 'sqlite' | 'postgres'): string[] {
       depuis ${ENTIER} NOT NULL,
       combat_id ${TEXTE}
     )`,
+    `CREATE TABLE IF NOT EXISTS tours (
+      compte ${TEXTE} PRIMARY KEY,
+      etat ${TEXTE} NOT NULL,
+      combat_id ${TEXTE},
+      niveau_equipe ${ENTIER} NOT NULL DEFAULT 10,
+      jour_gratuit ${ENTIER} NOT NULL DEFAULT 0,
+      cree_le ${ENTIER} NOT NULL,
+      maj_le ${ENTIER} NOT NULL
+    )`,
     `CREATE TABLE IF NOT EXISTS salons (
       code ${TEXTE} PRIMARY KEY,
       hote ${TEXTE} NOT NULL,

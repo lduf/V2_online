@@ -80,6 +80,12 @@ import {
 } from './combats.js';
 import { equipeBot, type ModeMatch } from '@arene/engine';
 import {
+  abandonnerTour,
+  choisirBonus,
+  demarrerTour,
+  vueTour,
+} from './tours.js';
+import {
   creerSalon,
   etatFile,
   etatSalon,
@@ -547,6 +553,42 @@ routes.post(
     if (!r.ok || !r.combat) return erreur(res, 400, r.message ?? 'Abandon impossible.');
     const cote = coteDe(r.combat, req.compte!.id)!;
     res.json(vueClient(r.combat, cote, await evenementsDepuis(r.combat.id, depuis), depuis));
+  }),
+);
+
+// ───────────────────────── Tour des Rattrapages ─────────────────────────
+
+routes.get(
+  '/tour',
+  a(async (req, res) => {
+    res.json(await vueTour(req.compte!.id));
+  }),
+);
+
+routes.post(
+  '/tour/demarrer',
+  a(async (req, res) => {
+    const r = await demarrerTour(req.compte!.id);
+    if (r.erreur) return erreur(res, 400, r.erreur);
+    res.json(await vueTour(req.compte!.id));
+  }),
+);
+
+routes.post(
+  '/tour/bonus',
+  a(async (req, res) => {
+    const id = String(req.body?.id ?? '');
+    const r = await choisirBonus(req.compte!.id, id);
+    if (r.erreur) return erreur(res, 400, r.erreur);
+    res.json(await vueTour(req.compte!.id));
+  }),
+);
+
+routes.post(
+  '/tour/abandonner',
+  a(async (req, res) => {
+    await abandonnerTour(req.compte!.id);
+    res.json(await vueTour(req.compte!.id));
   }),
 );
 

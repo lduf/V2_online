@@ -11,9 +11,11 @@ import { Collection } from './ecrans/Collection';
 import { Boutique } from './ecrans/Boutique';
 import { Invocation } from './ecrans/Invocation';
 import { Classement } from './ecrans/Classement';
+import { Tour } from './ecrans/Tour';
 
 const NAV: { id: Ecran; libelle: string; emoji: string }[] = [
   { id: 'accueil', libelle: 'Hub', emoji: '🏟️' },
+  { id: 'tour', libelle: 'La Tour', emoji: '🗼' },
   { id: 'atelier', libelle: 'Atelier', emoji: '🧬' },
   { id: 'invocation', libelle: 'Invocation', emoji: '🔮' },
   { id: 'boutique', libelle: 'Boutique', emoji: '🏪' },
@@ -110,6 +112,8 @@ export function App() {
           <Invocation />
         ) : ecran === 'classement' ? (
           <Classement />
+        ) : ecran === 'tour' ? (
+          <Tour />
         ) : (
           <Accueil />
         )}

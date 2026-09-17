@@ -1,4 +1,4 @@
-import type { PersoPossede, Rarete, StatKey, UniteCombat } from './types.js';
+import type { EquipeCombat, PersoPossede, Rarete, StatKey } from './types.js';
 import { Rng } from './rng.js';
 import { equipeBot, type EquipeGeneree } from './roster.js';
 
@@ -12,6 +12,17 @@ import { equipeBot, type EquipeGeneree } from './roster.js';
  */
 
 export const ETAGES_TOUR = 10;
+
+/**
+ * Récupération automatique après chaque étage, en part des PV max.
+ *
+ * Sans elle, dix combats d'affilée à armes égales donnent une probabilité de
+ * victoire de l'ordre de 0,5¹⁰ : la tentative se termine presque toujours au
+ * deuxième ou troisième étage, quel que soit le niveau du joueur. L'attrition
+ * reste le sel du mode, mais elle ne doit pas condamner la tentative d'avance.
+ * Un personnage K.O. ne se relève pas pour autant : c'est là qu'est la tension.
+ */
+export const REGEN_ETAGE_BASE = 0.2;
 
 export type EffetBonus =
   | { type: 'PV_MAX'; pourcent: number }
@@ -190,13 +201,13 @@ export function proposerBonus(rng: Rng, etat: EtatTour): string[] {
  * PV reportés de l'étage précédent.
  */
 export function appliquerBonus(
-  unites: UniteCombat[],
+  equipe: EquipeCombat,
   bonusIds: string[],
   pvReportes: Record<string, number>,
-): void {
+): boolean {
   const effets = bonusIds.flatMap((id) => BONUS_PAR_ID[id]?.effets ?? []);
 
-  for (const u of unites) {
+  for (const u of equipe.unites) {
     // Les PV max d'abord : tout le reste s'exprime en pourcentage de ceux-ci.
     for (const e of effets) {
       if (e.type === 'PV_MAX') {
@@ -223,9 +234,20 @@ export function appliquerBonus(
     const reporte = pvReportes[u.uid];
     if (reporte !== undefined) {
       u.pv = Math.max(0, Math.min(u.pvMax, reporte));
-      if (u.pv === 0) u.ko = true;
+      if (u.pv === 0) {
+        u.ko = true;
+        u.bouclier = 0;
+      }
     }
   }
+
+  // Un combattant K.O. ne peut pas rester en première ligne : le moteur ne
+  // déclenche son remplacement que lorsqu'il le met K.O. lui-même. Sans ce
+  // recadrage, le camp n'a plus d'unité jouable et ne joue plus jamais.
+  const premierValide = equipe.unites.findIndex((u) => !u.ko);
+  if (premierValide === -1) return false;
+  if (equipe.unites[equipe.actif].ko) equipe.actif = premierValide;
+  return true;
 }
 
 /** Soins appliqués entre deux étages (bénédictions « soin » et « régénération »). */
@@ -252,7 +274,12 @@ export function soinsEntreEtages(
       }
     }
   };
-  // La régénération vient des bénédictions déjà acquises, le soin de la nouvelle.
+  // Récupération de base, puis bénédictions déjà acquises, puis le soin choisi.
+  for (const uid of Object.keys(out)) {
+    if (out[uid] <= 0) continue;
+    const max = pvMax[uid] ?? 0;
+    out[uid] = Math.min(max, out[uid] + Math.round(max * REGEN_ETAGE_BASE));
+  }
   appliquer(bonusIds, ['REGEN_ETAGE']);
   appliquer(nouveauxBonus, ['SOIN']);
   return out;
@@ -260,9 +287,16 @@ export function soinsEntreEtages(
 
 /** Composition adverse d'un étage : de plus en plus rude, boss au dernier. */
 export function equipeEtage(etage: number, niveauJoueur: number, rng: Rng): EquipeGeneree {
-  const palier = etage >= 8 ? 'DIFFICILE' : etage >= 4 ? 'NORMAL' : 'FACILE';
-  const ecart = Math.round((etage - 1) * 0.9) + (etage === ETAGES_TOUR ? 4 : 0);
-  const niveau = Math.max(3, Math.min(50, niveauJoueur + ecart - 2));
+  const palier = etage >= 9 ? 'DIFFICILE' : etage >= 6 ? 'NORMAL' : 'FACILE';
+  // L'écart est proportionnel et non absolu : sinon un joueur de niveau 12
+  // affronte un premier étage deux fois plus faible que lui, là où un joueur
+  // de niveau 40 n'a qu'un léger avantage, et la Tour devient paradoxalement
+  // plus dure à mesure qu'on progresse.
+  // Premier étage à 58 % du niveau du joueur, dernier à 109 %. Réglé un cran
+  // au-dessus de la simulation : un joueur réel, avec une équipe choisie et
+  // de la couverture élémentaire, fait mieux que l'IA qui a servi à calibrer.
+  const facteur = 0.58 + (etage - 1) * 0.055 + (etage === ETAGES_TOUR ? 0.04 : 0);
+  const niveau = Math.max(3, Math.min(50, Math.round(niveauJoueur * facteur)));
   return equipeBot(palier, niveau, rng);
 }
 

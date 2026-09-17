@@ -9,7 +9,8 @@ export type Ecran =
   | 'collection'
   | 'boutique'
   | 'invocation'
-  | 'classement';
+  | 'classement'
+  | 'tour';
 
 interface Toast {
   id: number;

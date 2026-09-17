@@ -129,6 +129,21 @@ export interface LigneClassement {
   serie: number;
 }
 
+export interface VueTour {
+  enCours: boolean;
+  etage: number;
+  etages: number;
+  nomEtage: string;
+  bonus: string[];
+  choix: string[] | null;
+  combatId: string | null;
+  termine: boolean;
+  victoire: boolean;
+  pv: Record<string, number>;
+  tentativeGratuiteDispo: boolean;
+  coutTentative: number;
+}
+
 export interface EtatFile {
   enFile: boolean;
   combatId: string | null;
@@ -202,6 +217,11 @@ export const api = {
     requete<EtatCombatClient>('POST', `/combat/${id}/action`, { action, depuis }),
   abandonner: (id: string, depuis: number) =>
     requete<EtatCombatClient>('POST', `/combat/${id}/abandon`, { depuis }),
+
+  tour: () => requete<VueTour>('GET', '/tour'),
+  tourDemarrer: () => requete<VueTour>('POST', '/tour/demarrer', {}),
+  tourBonus: (id: string) => requete<VueTour>('POST', '/tour/bonus', { id }),
+  tourAbandonner: () => requete<VueTour>('POST', '/tour/abandonner', {}),
 
   rejoindreFile: () => requete<EtatFile>('POST', '/file/rejoindre', {}),
   etatFile: () => requete<EtatFile>('GET', '/file/etat'),

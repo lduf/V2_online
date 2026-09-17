@@ -3318,15 +3318,24 @@ s {
 
 /* ─────────────────────────── Mobile ─────────────────────────── */
 
-@media (max-width: 720px) {
+@media (max-width: 1200px) {
   .nav button i {
     display: none;
   }
   .nav button {
-    padding: 0.5rem 0.65rem;
+    padding: 0.5rem 0.7rem;
   }
+  .nav button span {
+    font-size: 1.05rem;
+  }
+}
+
+@media (max-width: 720px) {
   .entete {
     gap: 0.5rem;
+  }
+  .nav button {
+    padding: 0.5rem 0.55rem;
   }
   .fiche {
     min-width: 0;
@@ -4593,4 +4602,208 @@ s {
   .combat--fatal .arene {
     transform: none;
   }
+}
+
+/* ==========================================================================
+   La Tour des Rattrapages
+   ========================================================================== */
+
+.escalier {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.escalier__etage {
+  display: grid;
+  grid-template-columns: 2rem 1fr auto;
+  gap: 0.6rem;
+  align-items: center;
+  padding: 0.45rem 0.7rem;
+  border-radius: var(--rayon-s);
+  background: rgba(0, 0, 0, 0.28);
+  border-left: 3px solid var(--texte-faible);
+  font-size: 0.88rem;
+  transition: var(--transition);
+}
+
+.escalier__numero {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  color: var(--texte-faible);
+  text-align: right;
+}
+
+.escalier__nom {
+  color: var(--texte-doux);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.escalier__etage.est-reussi {
+  border-left-color: var(--vert);
+  background: rgba(67, 209, 124, 0.1);
+}
+
+.escalier__etage.est-reussi .escalier__nom,
+.escalier__etage.est-reussi .escalier__numero {
+  color: var(--vert);
+}
+
+.escalier__etage.est-courant {
+  border-left-color: var(--accent);
+  background: linear-gradient(90deg, rgba(255, 79, 163, 0.22), transparent);
+  box-shadow: 0 0 0 1px rgba(255, 79, 163, 0.35);
+}
+
+.escalier__etage.est-courant .escalier__nom {
+  color: #fff;
+  font-weight: 600;
+}
+
+.escalier__etage.est-a-venir {
+  opacity: 0.5;
+}
+
+/* Le dernier étage a droit à son traitement. */
+.escalier__etage:first-child .escalier__nom {
+  font-weight: 700;
+  background: linear-gradient(120deg, #ffe9a8, #ffb347);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.escalier__marque {
+  font-size: 0.8rem;
+}
+
+.benedictions {
+  margin: 1.2rem 0;
+}
+
+.benedictions__grille {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.6rem;
+}
+
+.benediction {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  gap: 0.25rem;
+  padding: 1rem 0.8rem;
+  border-radius: var(--rayon);
+  border: 1px solid var(--panneau-bord);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.06), rgba(0, 0, 0, 0.3));
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.benediction:hover:not(:disabled) {
+  transform: translateY(-3px);
+  border-color: var(--accent);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45);
+}
+
+.benediction:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.benediction__emoji {
+  font-size: 2.2rem;
+}
+
+.benediction strong {
+  font-size: 0.95rem;
+}
+
+.benediction small {
+  font-size: 0.76rem;
+  color: var(--texte-doux);
+  line-height: 1.4;
+}
+
+.benediction.rarete--epique {
+  border-color: rgba(199, 125, 255, 0.55);
+  box-shadow: 0 0 22px rgba(199, 125, 255, 0.18);
+}
+
+.benediction.rarete--rare {
+  border-color: rgba(74, 168, 255, 0.45);
+}
+
+.benedictions__acquises {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+}
+
+.benediction-puce {
+  font-size: 0.76rem;
+  padding: 0.22rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid var(--panneau-bord);
+}
+
+.benediction-puce.rarete--epique {
+  border-color: rgba(199, 125, 255, 0.6);
+  color: #dcb4ff;
+}
+
+.tour__reprise,
+.tour__lancement {
+  display: grid;
+  justify-items: center;
+  gap: 0.6rem;
+  margin: 1.2rem 0;
+}
+
+.tour__reprise .bouton--large,
+.tour__lancement .bouton--large {
+  max-width: 420px;
+}
+
+.tour__bareme {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 0.4rem;
+}
+
+.bareme {
+  display: grid;
+  justify-items: center;
+  gap: 0.1rem;
+  padding: 0.6rem 0.4rem;
+  border-radius: var(--rayon-s);
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--panneau-bord);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  color: var(--texte-doux);
+  opacity: 0.6;
+}
+
+.bareme strong {
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.8rem;
+  color: var(--texte);
+}
+
+.bareme em {
+  font-style: normal;
+  font-size: 0.66rem;
+  color: var(--or);
+}
+
+.bareme.est-atteint {
+  opacity: 1;
+  border-color: var(--vert);
 }
