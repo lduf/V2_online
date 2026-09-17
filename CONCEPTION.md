@@ -153,8 +153,17 @@ perfectionner les gènes et à fabriquer un sort précis plutôt que de l'espér
 Ça transforme la déception du doublon en progression.
 
 **Les talents.** Aux niveaux 25 et 50, chaque personnage choisit entre deux
-améliorations de son passif. Deux Maxence de niveau 50 peuvent enfin être
-différents.
+talents. Deux Maxence de niveau 50 peuvent enfin être différents.
+
+*Implémenté ainsi :* les talents sont attachés au **rôle**, pas à l'espèce —
+vingt-quatre définitions au lieu de deux cents, et le rôle gagne une identité
+lisible au-delà de la répartition des stats. Les deux options d'un palier
+tirent volontairement dans des directions opposées (survivre ou frapper plus
+fort, un plancher sur le dé ou du critique). Chaque paire a été passée au
+miroir sur 120 combats simulés et retouchée jusqu'à tenir dans 43–63 % : trois
+paires ont dû être rééquilibrées, la survie du bruiser étant partie à 71 % et
+les épines du tank à 32 %. Le premier choix de chaque palier est gratuit ; se
+raviser coûte 150 d'essence, ce qui donne à l'essence une seconde destination.
 
 ---
 

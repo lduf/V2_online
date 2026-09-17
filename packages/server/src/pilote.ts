@@ -136,6 +136,23 @@ export function instructionsSchema(dialecte: 'sqlite' | 'postgres'): string[] {
       depuis ${ENTIER} NOT NULL,
       combat_id ${TEXTE}
     )`,
+    `CREATE TABLE IF NOT EXISTS progression_objectifs (
+      compte ${TEXTE} NOT NULL,
+      objectif_id ${TEXTE} NOT NULL,
+      jour ${ENTIER} NOT NULL DEFAULT 0,
+      valeur ${ENTIER} NOT NULL DEFAULT 0,
+      reclame ${ENTIER} NOT NULL DEFAULT 0,
+      PRIMARY KEY (compte, objectif_id, jour)
+    )`,
+    `CREATE TABLE IF NOT EXISTS tours (
+      compte ${TEXTE} PRIMARY KEY,
+      etat ${TEXTE} NOT NULL,
+      combat_id ${TEXTE},
+      niveau_equipe ${ENTIER} NOT NULL DEFAULT 10,
+      jour_gratuit ${ENTIER} NOT NULL DEFAULT 0,
+      cree_le ${ENTIER} NOT NULL,
+      maj_le ${ENTIER} NOT NULL
+    )`,
     `CREATE TABLE IF NOT EXISTS salons (
       code ${TEXTE} PRIMARY KEY,
       hote ${TEXTE} NOT NULL,
@@ -153,9 +170,14 @@ export function instructionsSchema(dialecte: 'sqlite' | 'postgres'): string[] {
  */
 export function instructionsMigration(dialecte: 'sqlite' | 'postgres'): string[] {
   const ENTIER = dialecte === 'postgres' ? 'BIGINT' : 'INTEGER';
+  const TEXTE = 'TEXT';
   return [
     `ALTER TABLE persos ADD COLUMN chromatique ${ENTIER} NOT NULL DEFAULT 0`,
     `ALTER TABLE sorts_possedes ADD COLUMN prisme ${ENTIER} NOT NULL DEFAULT 0`,
     `ALTER TABLE comptes ADD COLUMN essence ${ENTIER} NOT NULL DEFAULT 0`,
+    `ALTER TABLE comptes ADD COLUMN connexion_jour ${ENTIER} NOT NULL DEFAULT 0`,
+    `ALTER TABLE comptes ADD COLUMN connexion_palier ${ENTIER} NOT NULL DEFAULT 0`,
+    `ALTER TABLE comptes ADD COLUMN vu_intro ${TEXTE}`,
+    `ALTER TABLE persos ADD COLUMN talents ${TEXTE}`,
   ];
 }

@@ -11,9 +11,12 @@ import { Collection } from './ecrans/Collection';
 import { Boutique } from './ecrans/Boutique';
 import { Invocation } from './ecrans/Invocation';
 import { Classement } from './ecrans/Classement';
+import { Tour } from './ecrans/Tour';
+import { useObjectifs } from './Objectifs';
 
 const NAV: { id: Ecran; libelle: string; emoji: string }[] = [
   { id: 'accueil', libelle: 'Hub', emoji: '🏟️' },
+  { id: 'tour', libelle: 'La Tour', emoji: '🗼' },
   { id: 'atelier', libelle: 'Atelier', emoji: '🧬' },
   { id: 'invocation', libelle: 'Invocation', emoji: '🔮' },
   { id: 'boutique', libelle: 'Boutique', emoji: '🏪' },
@@ -28,10 +31,15 @@ export function App() {
   const deconnexion = useApp((s) => s.deconnexion);
   const fermerToast = useApp((s) => s.fermerToast);
   const [son, setSon] = useState(sonActif());
+  const { vue: objectifs, recharger: rechargerObjectifs } = useObjectifs();
 
   useEffect(() => {
     void initialiser();
   }, [initialiser]);
+
+  useEffect(() => {
+    if (connecte) void rechargerObjectifs();
+  }, [connecte, rechargerObjectifs]);
 
   if (!pret) {
     return (
@@ -75,13 +83,20 @@ export function App() {
               >
                 <span aria-hidden>{n.emoji}</span>
                 <i>{n.libelle}</i>
+                {n.id === 'accueil' && (objectifs?.aReclamer ?? 0) > 0 && (
+                  <b className="nav__pastille">{objectifs!.aReclamer}</b>
+                )}
               </button>
             ))}
           </nav>
         )}
 
         <div className="entete__droite">
-          <Ressources credits={profil.compte.credits} eclats={profil.compte.eclats} />
+          <Ressources
+            credits={profil.compte.credits}
+            eclats={profil.compte.eclats}
+            essence={profil.compte.essence}
+          />
           <button
             className="bouton-mini"
             title={son ? 'Couper le son' : 'Activer le son'}
@@ -110,6 +125,8 @@ export function App() {
           <Invocation />
         ) : ecran === 'classement' ? (
           <Classement />
+        ) : ecran === 'tour' ? (
+          <Tour />
         ) : (
           <Accueil />
         )}

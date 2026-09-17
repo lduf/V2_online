@@ -1,7 +1,9 @@
 import { Router, type NextFunction, type Request, type Response } from 'express';
 import {
   BANNIERES,
-  COUT_HYPER_ENTRAINEMENT,
+  COUT_GENE_ESSENCE,
+  COUT_RESPEC_TALENT,
+  coutFabrication,
   COUT_REROLL_GENES,
   COUT_REROLL_GENES_SORT,
   DIVISIONS,
@@ -13,6 +15,7 @@ import {
   numeroSaison,
   Rng,
   SORTS_PAR_ID,
+  STARTERS_PAR_ID,
   seedAleatoire,
   TAILLE_EQUIPE,
   tirerChromatique,
@@ -20,6 +23,11 @@ import {
   tirerIvsSort,
   tirerNature,
   tirerPrisme,
+  PALIERS_TALENT,
+  talentsDuPerso,
+  valeurDissolutionPerso,
+  valeurDissolutionSort,
+  PLANCHER_IV_FABRICATION,
   TOUTES_STATS,
   uid,
   validerEquipe,
@@ -80,6 +88,19 @@ import {
 } from './combats.js';
 import { equipeBot, type ModeMatch } from '@arene/engine';
 import {
+  avancer,
+  marquerIntroVue,
+  reclamer,
+  reclamerConnexion,
+  vueObjectifs,
+} from './objectifs.js';
+import {
+  abandonnerTour,
+  choisirBonus,
+  demarrerTour,
+  vueTour,
+} from './tours.js';
+import {
   creerSalon,
   etatFile,
   etatSalon,
@@ -108,11 +129,13 @@ function a(
 routes.post(
   '/auth/inscription',
   a(async (req, res) => {
-    const { pseudo, motDePasse } = req.body ?? {};
+    const { pseudo, motDePasse, starter } = req.body ?? {};
     const v = validerInscription(pseudo, motDePasse);
     if (!v.ok) return erreur(res, 400, v.message);
     if (await compteParPseudo(pseudo)) return erreur(res, 409, 'Ce pseudo est déjà pris.');
-    const compte = await creerCompte(pseudo, hacher(motDePasse));
+    const starterId =
+      typeof starter === 'string' && STARTERS_PAR_ID[starter] ? starter : undefined;
+    const compte = await creerCompte(pseudo, hacher(motDePasse), starterId);
     res.json({ token: signerToken(compte.id), compte: publicCompte(compte) });
   }),
 );
@@ -167,7 +190,9 @@ routes.put(
     if (new Set(membres).size !== membres.length) {
       return erreur(res, 400, 'Impossible d’aligner deux fois le même personnage.');
     }
-    await definirEquipe(await base(), compteId, membres);
+    const db = await base();
+    await definirEquipe(db, compteId, membres);
+    await avancer(db, compteId, { type: 'COMPOSER_EQUIPE' });
     res.json({ equipe: membres });
   }),
 );
@@ -252,7 +277,11 @@ routes.put(
       perso.surnom = surnom ?? undefined;
     }
 
-    await majPerso(await base(), compteId, perso);
+    const db = await base();
+    await majPerso(db, compteId, perso);
+    if (sorts !== undefined && perso.sorts.some((x) => !!x)) {
+      await avancer(db, compteId, { type: 'EQUIPER_SORT' });
+    }
     res.json({ perso });
   }),
 );
@@ -286,17 +315,141 @@ routes.post(
     const perso = await persoDe(compte.id, req.params.uid);
     if (!perso) return erreur(res, 404, 'Personnage introuvable.');
     if (perso.ivs[stat] >= IV_MAX) return erreur(res, 400, 'Ce gène est déjà parfait.');
-    if (compte.eclats < COUT_HYPER_ENTRAINEMENT) return erreur(res, 402, 'Pas assez d’éclats.');
+    if (compte.essence < COUT_GENE_ESSENCE) {
+      return erreur(res, 402, `Il faut ${COUT_GENE_ESSENCE} essence — dissous des doublons.`);
+    }
     perso.ivs[stat] = IV_MAX;
     const db = await base();
     await db.tx(async (tx) => {
-      await tx.run('UPDATE comptes SET eclats = eclats - ? WHERE id = ?', [
-        COUT_HYPER_ENTRAINEMENT,
+      await tx.run('UPDATE comptes SET essence = essence - ? WHERE id = ?', [
+        COUT_GENE_ESSENCE,
         compte.id,
       ]);
       await majPerso(tx, compte.id, perso);
     });
     res.json(await profilComplet(compte.id));
+  }),
+);
+
+// ───────────────────────────── Talents ─────────────────────────────
+
+routes.post(
+  '/persos/:uid/talent',
+  a(async (req, res) => {
+    const compte = req.compte!;
+    const palier = Number(req.body?.palier);
+    const talentId = String(req.body?.talentId ?? '');
+    if (!PALIERS_TALENT.includes(palier as (typeof PALIERS_TALENT)[number])) {
+      return erreur(res, 400, 'Palier inconnu.');
+    }
+    const perso = await persoDe(compte.id, req.params.uid);
+    if (!perso) return erreur(res, 404, 'Personnage introuvable.');
+
+    const etat = talentsDuPerso(perso).find((t) => t.palier === palier)!;
+    if (!etat.debloque) return erreur(res, 400, `Palier ${palier} pas encore atteint.`);
+    if (!etat.choix.some((t) => t.id === talentId)) {
+      return erreur(res, 400, 'Ce talent n’est pas proposé à ce personnage.');
+    }
+    if (etat.choisi?.id === talentId) return erreur(res, 400, 'Ce talent est déjà actif.');
+
+    // Le premier choix est offert ; se raviser coûte de l'essence.
+    const cout = etat.choisi ? COUT_RESPEC_TALENT : 0;
+    if (compte.essence < cout) {
+      return erreur(res, 402, `Changer d’avis coûte ${COUT_RESPEC_TALENT} essence.`);
+    }
+
+    const autres = (perso.talents ?? []).filter(
+      (id) => !etat.choix.some((t) => t.id === id),
+    );
+    perso.talents = [...autres, talentId];
+
+    const db = await base();
+    await db.tx(async (tx) => {
+      if (cout > 0) {
+        await tx.run('UPDATE comptes SET essence = essence - ? WHERE id = ?', [cout, compte.id]);
+      }
+      await majPerso(tx, compte.id, perso);
+    });
+    res.json({ cout, ...(await profilComplet(compte.id)) });
+  }),
+);
+
+// ───────────────────────────── Essence ─────────────────────────────
+
+routes.post(
+  '/persos/:uid/dissoudre',
+  a(async (req, res) => {
+    const compte = req.compte!;
+    const perso = await persoDe(compte.id, req.params.uid);
+    if (!perso) return erreur(res, 404, 'Personnage introuvable.');
+
+    const equipe = await equipeDe(compte.id);
+    if (equipe.includes(perso.uid)) {
+      return erreur(res, 400, 'Retire-le d’abord de ton équipe.');
+    }
+    const tous = await persosDe(compte.id);
+    if (tous.length <= 3) {
+      return erreur(res, 400, 'Il te faut au moins trois personnages pour aligner une équipe.');
+    }
+
+    const gain = valeurDissolutionPerso(perso);
+    const db = await base();
+    await db.tx(async (tx) => {
+      // Les sorts équipés sur ce personnage redeviennent libres.
+      await tx.run('DELETE FROM persos WHERE uid = ? AND compte = ?', [perso.uid, compte.id]);
+      await tx.run('UPDATE comptes SET essence = essence + ? WHERE id = ?', [gain, compte.id]);
+    });
+    res.json({ gain, ...(await profilComplet(compte.id)) });
+  }),
+);
+
+routes.post(
+  '/sorts/:uid/dissoudre',
+  a(async (req, res) => {
+    const compte = req.compte!;
+    const sort = await sortDe(compte.id, req.params.uid);
+    if (!sort) return erreur(res, 404, 'Sort introuvable.');
+
+    const porteur = (await persosDe(compte.id)).find((p) => p.sorts.includes(sort.uid));
+    if (porteur) return erreur(res, 400, 'Ce sort est équipé sur un personnage.');
+
+    const gain = valeurDissolutionSort(sort);
+    const db = await base();
+    await db.tx(async (tx) => {
+      await tx.run('DELETE FROM sorts_possedes WHERE uid = ? AND compte = ?', [
+        sort.uid,
+        compte.id,
+      ]);
+      await tx.run('UPDATE comptes SET essence = essence + ? WHERE id = ?', [gain, compte.id]);
+    });
+    res.json({ gain, ...(await profilComplet(compte.id)) });
+  }),
+);
+
+routes.post(
+  '/fabriquer',
+  a(async (req, res) => {
+    const compte = req.compte!;
+    const defId = String(req.body?.defId ?? '');
+    if (!SORTS_PAR_ID[defId]) return erreur(res, 400, 'Sort inconnu.');
+    const cout = coutFabrication(defId);
+    if (compte.essence < cout) {
+      return erreur(res, 402, `Il faut ${cout} essence pour fabriquer ce sort.`);
+    }
+    const rng = new Rng(seedAleatoire());
+    const nouveau: SortPossede = {
+      uid: uid('s'),
+      defId,
+      ivs: tirerIvsSort(rng, PLANCHER_IV_FABRICATION),
+      obtenuLe: Date.now(),
+      prisme: tirerPrisme(rng),
+    };
+    const db = await base();
+    await db.tx(async (tx) => {
+      await tx.run('UPDATE comptes SET essence = essence - ? WHERE id = ?', [cout, compte.id]);
+      await ajouterSort(tx, compte.id, nouveau);
+    });
+    res.json({ sort: nouveau, ...(await profilComplet(compte.id)) });
   }),
 );
 
@@ -327,22 +480,23 @@ routes.post(
   a(async (req, res) => {
     const compte = req.compte!;
     const type = req.body?.banniere as TypeBanniere;
-    const nombreTirages = Number(req.body?.nombre ?? 1) === 10 ? 10 : 1;
     const banniere = BANNIERES[type];
     if (!banniere) return erreur(res, 400, 'Bannière inconnue.');
 
-    const cout = nombreTirages === 10 ? banniere.coutDix : banniere.coutUnite;
+    const lot = req.body?.lot === true;
+    const nombreBoosters = lot ? banniere.boostersParLot : 1;
+    const cout = lot ? banniere.coutLot : banniere.coutBooster;
     const credits = cout.credits ?? 0;
     const eclats = cout.eclats ?? 0;
     if (compte.credits < credits) return erreur(res, 402, 'Pas assez de crédits.');
     if (compte.eclats < eclats) return erreur(res, 402, 'Pas assez d’éclats.');
 
     const pitieActuelle = type === 'STANDARD' ? compte.pitie_standard : compte.pitie_legendaire;
-    const { tirages, nouveauCompteurPitie } = invoquer(
+    const { boosters, nouveauCompteurPitie } = invoquer(
       banniere,
       new Rng(seedAleatoire()),
       pitieActuelle,
-      nombreTirages,
+      nombreBoosters,
     );
 
     const db = await base();
@@ -358,28 +512,31 @@ routes.post(
           : 'UPDATE comptes SET pitie_legendaire = ? WHERE id = ?',
         [nouveauCompteurPitie, compte.id],
       );
-      for (const t of tirages) {
-        if (t.kind === 'PERSO') {
-          const p = nouveauPersoVide(t.especeId, t.natureId);
-          p.ivs = t.ivs;
-          p.chromatique = t.chromatique;
-          await ajouterPerso(tx, compte.id, p);
-        } else if (t.kind === 'SORT') {
-          const s: SortPossede = {
-            uid: uid('s'),
-            defId: t.defId,
-            ivs: t.ivs,
-            obtenuLe: Date.now(),
-            prisme: t.prisme,
-          };
-          await ajouterSort(tx, compte.id, s);
-        } else {
-          await ajouterItem(tx, compte.id, t.itemId, 1);
+      for (const booster of boosters) {
+        for (const t of booster.cartes) {
+          if (t.kind === 'PERSO') {
+            const p = nouveauPersoVide(t.especeId, t.natureId);
+            p.ivs = t.ivs;
+            p.chromatique = t.chromatique;
+            await ajouterPerso(tx, compte.id, p);
+          } else if (t.kind === 'SORT') {
+            const sp: SortPossede = {
+              uid: uid('s'),
+              defId: t.defId,
+              ivs: t.ivs,
+              obtenuLe: Date.now(),
+              prisme: t.prisme,
+            };
+            await ajouterSort(tx, compte.id, sp);
+          } else {
+            await ajouterItem(tx, compte.id, t.itemId, 1);
+          }
         }
       }
     });
 
-    res.json({ tirages, ...(await profilComplet(compte.id)) });
+    await avancer(db, compte.id, { type: 'BOOSTER', nombre: boosters.length });
+    res.json({ boosters, ...(await profilComplet(compte.id)) });
   }),
 );
 
@@ -544,6 +701,76 @@ routes.post(
     if (!r.ok || !r.combat) return erreur(res, 400, r.message ?? 'Abandon impossible.');
     const cote = coteDe(r.combat, req.compte!.id)!;
     res.json(vueClient(r.combat, cote, await evenementsDepuis(r.combat.id, depuis), depuis));
+  }),
+);
+
+// ───────────────────────── Objectifs & onboarding ─────────────────────────
+
+routes.get(
+  '/objectifs',
+  a(async (req, res) => {
+    res.json(await vueObjectifs(req.compte!.id));
+  }),
+);
+
+routes.post(
+  '/objectifs/:id/reclamer',
+  a(async (req, res) => {
+    const r = await reclamer(req.compte!.id, req.params.id);
+    if (r.erreur) return erreur(res, 400, r.erreur);
+    res.json({ ...r, ...(await profilComplet(req.compte!.id)) });
+  }),
+);
+
+routes.post(
+  '/connexion/reclamer',
+  a(async (req, res) => {
+    const r = await reclamerConnexion(req.compte!.id);
+    if (r.erreur) return erreur(res, 400, r.erreur);
+    res.json({ ...r, ...(await profilComplet(req.compte!.id)) });
+  }),
+);
+
+routes.post(
+  '/intro/:ecran',
+  a(async (req, res) => {
+    res.json({ vuIntro: await marquerIntroVue(req.compte!.id, req.params.ecran) });
+  }),
+);
+
+// ───────────────────────── Tour des Rattrapages ─────────────────────────
+
+routes.get(
+  '/tour',
+  a(async (req, res) => {
+    res.json(await vueTour(req.compte!.id));
+  }),
+);
+
+routes.post(
+  '/tour/demarrer',
+  a(async (req, res) => {
+    const r = await demarrerTour(req.compte!.id);
+    if (r.erreur) return erreur(res, 400, r.erreur);
+    res.json(await vueTour(req.compte!.id));
+  }),
+);
+
+routes.post(
+  '/tour/bonus',
+  a(async (req, res) => {
+    const id = String(req.body?.id ?? '');
+    const r = await choisirBonus(req.compte!.id, id);
+    if (r.erreur) return erreur(res, 400, r.erreur);
+    res.json(await vueTour(req.compte!.id));
+  }),
+);
+
+routes.post(
+  '/tour/abandonner',
+  a(async (req, res) => {
+    await abandonnerTour(req.compte!.id);
+    res.json(await vueTour(req.compte!.id));
   }),
 );
 

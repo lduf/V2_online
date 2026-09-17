@@ -1,7 +1,11 @@
 import { useMemo, useState } from 'react';
 import {
-  COUT_HYPER_ENTRAINEMENT,
+  COUT_GENE_ESSENCE,
   COUT_REROLL_GENES,
+  COUT_RESPEC_TALENT,
+  talentsDuPerso,
+  talentsEnAttente,
+  valeurDissolutionPerso,
   ESPECES_PAR_ID,
   INFO_ELEMENTS,
   ITEMS_PAR_ID,
@@ -29,7 +33,9 @@ export function Atelier() {
   const [selection, setSelection] = useState<string | null>(
     profil.equipe[0] ?? profil.persos[0]?.uid ?? null,
   );
-  const [ongletDroite, setOngletDroite] = useState<'sorts' | 'objet' | 'genes'>('sorts');
+  const [ongletDroite, setOngletDroite] = useState<'sorts' | 'objet' | 'genes' | 'talents'>(
+    'sorts',
+  );
   const [emplacement, setEmplacement] = useState<number | null>(null);
   const [occupe, setOccupe] = useState(false);
 
@@ -128,6 +134,51 @@ export function Atelier() {
       jouer('invocation');
     } catch (e) {
       notifier(e instanceof ErreurApi ? e.message : 'Opération impossible.', 'mal');
+    } finally {
+      setOccupe(false);
+    }
+  };
+
+  const dissoudre = async () => {
+    if (!perso || !espece) return;
+    const gain = valeurDissolutionPerso(perso);
+    if (
+      !confirm(
+        `Dissoudre ${perso.surnom || espece.nom} (niveau ${perso.niveau}) contre ${gain} essence ?\n\nC'est définitif : le personnage et ses gènes disparaissent.`,
+      )
+    ) {
+      return;
+    }
+    setOccupe(true);
+    try {
+      const r = await api.dissoudrePerso(perso.uid);
+      appliquerProfil(r);
+      setSelection(r.persos[0]?.uid ?? null);
+      notifier(`+${r.gain} essence`, 'bien');
+      jouer('achat');
+    } catch (e) {
+      notifier(e instanceof ErreurApi ? e.message : 'Dissolution impossible.', 'mal');
+    } finally {
+      setOccupe(false);
+    }
+  };
+
+  const choisirTalent = async (palier: number, talentId: string, remplace: boolean) => {
+    if (!perso) return;
+    if (
+      remplace &&
+      !confirm(
+        `Changer le talent du palier ${palier} coûte ${COUT_RESPEC_TALENT} essence. Confirmer ?`,
+      )
+    ) {
+      return;
+    }
+    setOccupe(true);
+    try {
+      appliquerProfil(await api.choisirTalent(perso.uid, palier, talentId));
+      jouer('achat');
+    } catch (e) {
+      notifier(e instanceof ErreurApi ? e.message : 'Talent refusé.', 'mal');
     } finally {
       setOccupe(false);
     }
@@ -246,6 +297,14 @@ export function Atelier() {
               <strong>✦ {espece.passif.nom}</strong>
               <span>{espece.passif.texte}</span>
             </div>
+            {talentsDuPerso(perso)
+              .filter((t) => t.choisi)
+              .map((t) => (
+                <div key={t.palier} className="detail__passif detail__passif--talent">
+                  <strong>✧ {t.choisi!.nom}</strong>
+                  <span>{t.choisi!.texte}</span>
+                </div>
+              ))}
             <p className="detail__lore">« {espece.lore} »</p>
 
             <FicheStats perso={perso} />
@@ -312,6 +371,15 @@ export function Atelier() {
                 onClick={() => setOngletDroite('genes')}
               >
                 Gènes
+              </button>
+              <button
+                className={ongletDroite === 'talents' ? 'est-actif' : ''}
+                onClick={() => setOngletDroite('talents')}
+              >
+                Talents
+                {talentsEnAttente(perso) > 0 && (
+                  <b className="onglets__pastille">{talentsEnAttente(perso)}</b>
+                )}
               </button>
             </div>
 
@@ -437,11 +505,11 @@ export function Atelier() {
                         </span>
                         <button
                           className="bouton-mini"
-                          disabled={iv === IV_MAX || occupe || profil.compte.eclats < COUT_HYPER_ENTRAINEMENT}
+                          disabled={iv === IV_MAX || occupe || profil.compte.essence < COUT_GENE_ESSENCE}
                           onClick={() => hyper(k)}
-                          title={`Perfectionner pour ${COUT_HYPER_ENTRAINEMENT} éclats`}
+                          title={`Perfectionner ce gène pour ${COUT_GENE_ESSENCE} essence`}
                         >
-                          ✨{COUT_HYPER_ENTRAINEMENT}
+                          💠{COUT_GENE_ESSENCE}
                         </button>
                       </div>
                     );
@@ -458,6 +526,69 @@ export function Atelier() {
                   Nature actuelle : <strong>{NATURES_PAR_ID[perso.natureId]?.nom}</strong> —{' '}
                   {NATURES_PAR_ID[perso.natureId]?.texte}
                 </p>
+
+                <h3 className="codex__sous-titre">Dissolution</h3>
+                <p className="panneau__aide">
+                  Un doublon dont tu ne feras rien vaut mieux en essence. L’essence sert à
+                  perfectionner les gènes et à fabriquer un sort précis, au lieu de l’espérer.
+                </p>
+                <button
+                  className="bouton bouton--large bouton--danger"
+                  onClick={dissoudre}
+                  disabled={occupe}
+                >
+                  💠 Dissoudre — +{valeurDissolutionPerso(perso)} essence
+                </button>
+              </>
+            )}
+
+            {ongletDroite === 'talents' && (
+              <>
+                <p className="panneau__aide">
+                  Aux niveaux 25 et 50, chaque personnage ouvre un choix entre deux talents. Ils
+                  dépendent du rôle ({espece.role.toLowerCase()}) et tirent volontairement dans des
+                  directions opposées : deux {espece.nom} ne se jouent pas forcément pareil.
+                </p>
+                {talentsDuPerso(perso).map((palier) => (
+                  <div key={palier.palier} className="talents__palier">
+                    <div className="talents__entete">
+                      <strong>Niveau {palier.palier}</strong>
+                      {palier.debloque ? (
+                        palier.choisi ? (
+                          <span className="etiquette">{palier.choisi.nom}</span>
+                        ) : (
+                          <span className="etiquette etiquette--alerte">À choisir</span>
+                        )
+                      ) : (
+                        <span className="etiquette">
+                          Encore {palier.palier - perso.niveau} niveau
+                          {palier.palier - perso.niveau > 1 ? 'x' : ''}
+                        </span>
+                      )}
+                    </div>
+                    <div className="talents__choix">
+                      {palier.choix.map((t) => {
+                        const actif = palier.choisi?.id === t.id;
+                        const remplace = !!palier.choisi && !actif;
+                        const cher = remplace && profil.compte.essence < COUT_RESPEC_TALENT;
+                        return (
+                          <button
+                            key={t.id}
+                            className={`talent ${actif ? 'est-actif' : ''}`}
+                            disabled={!palier.debloque || occupe || actif || cher}
+                            onClick={() => choisirTalent(palier.palier, t.id, remplace)}
+                          >
+                            <strong>
+                              {actif ? '✦' : '◇'} {t.nom}
+                            </strong>
+                            <small>{t.texte}</small>
+                            {remplace && <em>Changer — 💠{COUT_RESPEC_TALENT}</em>}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
               </>
             )}
           </section>

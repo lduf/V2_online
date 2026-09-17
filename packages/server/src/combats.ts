@@ -21,6 +21,7 @@ import {
   type EvtCombat,
   type ModeMatch,
   type PersoPossede,
+  type EquipeCombat,
   type SortPossede,
 } from '@arene/engine';
 import { base, nombre } from './db.js';
@@ -204,15 +205,30 @@ export async function creerSession(
   a: { joueur: JoueurCombat; equipe: EquipeChargee },
   b: { joueur: JoueurCombat; equipe: EquipeChargee },
   idForce?: string,
+  /**
+   * Retouche des unités juste après leur construction et avant le premier
+   * tour. Sert à la Tour des Rattrapages pour appliquer les bénédictions et
+   * reporter les points de vie de l'étage précédent.
+   */
+  apresConstruction?: (equipe: EquipeCombat) => void,
 ): Promise<CombatCharge> {
   const db = await base();
   const seed = seedAleatoire();
   const id = idForce ?? uid('m');
-  const etat = creerCombat(
-    construireEquipe(a.joueur.compteId ?? 'bot', a.joueur.pseudo, a.equipe.persos, a.equipe.sorts),
-    construireEquipe(b.joueur.compteId ?? 'bot', b.joueur.pseudo, b.equipe.persos, b.equipe.sorts),
-    { id, seed },
+  const eqA = construireEquipe(
+    a.joueur.compteId ?? 'bot',
+    a.joueur.pseudo,
+    a.equipe.persos,
+    a.equipe.sorts,
   );
+  const eqB = construireEquipe(
+    b.joueur.compteId ?? 'bot',
+    b.joueur.pseudo,
+    b.equipe.persos,
+    b.equipe.sorts,
+  );
+  if (apresConstruction) apresConstruction(eqA);
+  const etat = creerCombat(eqA, eqB, { id, seed });
 
   const charge: CombatCharge = {
     id,
@@ -248,8 +264,9 @@ export async function creerSession(
     );
     await ecrireEvenements(tx, id, 0, evts);
     charge.nbEvenements = evts.length;
-    await sauverCombat(tx, charge);
+    // La clôture d'abord : elle positionne `termine`, que la sauvegarde écrit.
     if (charge.etat.phase === 'TERMINE') await cloturer(tx, charge);
+    await sauverCombat(tx, charge);
   });
 
   return charge;
@@ -410,6 +427,18 @@ async function cloturer(db: Pilote, c: CombatCharge): Promise<void> {
       }
     }
 
+    // Progression des objectifs : premiers pas et contrats du jour.
+    {
+      const { avancer } = await import('./objectifs.js');
+      await avancer(db, compte.id, {
+        type: 'COMBAT',
+        victoire,
+        mode: c.mode,
+        stats: c.etat.stats[cote],
+        elements: c.etat.equipes[cote].unites.map((u) => u.element),
+      });
+    }
+
     resultats[cote] = {
       credits: recompenses.credits,
       eclats: recompenses.eclats,
@@ -422,6 +451,17 @@ async function cloturer(db: Pilote, c: CombatCharge): Promise<void> {
   }
 
   c.resultats = resultats;
+
+  // Un combat de tour fait avancer (ou terminer) la tentative en cours.
+  if (c.mode === 'TOUR') {
+    const cote = (c.joueurs[0].compteId ? 0 : 1) as Cote;
+    const compteId = c.joueurs[cote].compteId;
+    if (compteId) {
+      const { majApresCombat } = await import('./tours.js');
+      await majApresCombat(db, compteId, c, cote);
+    }
+  }
+
   await enregistrerMatch(db, {
     id: c.id,
     mode: c.mode,

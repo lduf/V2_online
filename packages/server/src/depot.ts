@@ -36,6 +36,7 @@ export function versPerso(l: LignePerso): PersoPossede {
     itemId: l.item_id,
     obtenuLe: nombre(l.obtenu_le),
     chromatique: nombre(l.chromatique) === 1,
+    talents: l.talents ? (JSON.parse(l.talents) as string[]) : [],
   };
 }
 
@@ -80,8 +81,8 @@ export function publicCompte(c: LigneCompte) {
 
 export async function ajouterPerso(db: Pilote, compte: string, p: PersoPossede): Promise<void> {
   await db.run(
-    `INSERT INTO persos (uid, compte, espece_id, surnom, niveau, xp, ivs, evs, nature_id, sorts, item_id, obtenu_le, chromatique)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO persos (uid, compte, espece_id, surnom, niveau, xp, ivs, evs, nature_id, sorts, item_id, obtenu_le, chromatique, talents)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       p.uid,
       compte,
@@ -96,6 +97,7 @@ export async function ajouterPerso(db: Pilote, compte: string, p: PersoPossede):
       p.itemId,
       p.obtenuLe,
       p.chromatique ? 1 : 0,
+      JSON.stringify(p.talents ?? []),
     ],
   );
 }
@@ -119,7 +121,11 @@ export const CREDITS_DEPART = 2500;
 export const ECLATS_DEPART = 60;
 
 /** Création d'un compte avec son roster de départ et une équipe pré-remplie. */
-export async function creerCompte(pseudo: string, hash: string): Promise<LigneCompte> {
+export async function creerCompte(
+  pseudo: string,
+  hash: string,
+  starterId?: string,
+): Promise<LigneCompte> {
   const db = await base();
   const id = uid('c');
   const maintenant = Date.now();
@@ -141,7 +147,7 @@ export async function creerCompte(pseudo: string, hash: string): Promise<LigneCo
       ],
     );
     const rng = new Rng(seedAleatoire());
-    const { persos, sorts } = rosterDepart(rng);
+    const { persos, sorts } = rosterDepart(rng, starterId);
     for (const s of sorts.values()) await ajouterSort(tx, id, s);
     for (const p of persos) await ajouterPerso(tx, id, p);
     await definirEquipe(
@@ -229,7 +235,7 @@ export async function equipeDe(compte: string): Promise<string[]> {
 
 export async function majPerso(db: Pilote, compte: string, p: PersoPossede): Promise<void> {
   await db.run(
-    `UPDATE persos SET surnom = ?, niveau = ?, xp = ?, ivs = ?, evs = ?, nature_id = ?, sorts = ?, item_id = ?
+    `UPDATE persos SET surnom = ?, niveau = ?, xp = ?, ivs = ?, evs = ?, nature_id = ?, sorts = ?, item_id = ?, talents = ?
      WHERE uid = ? AND compte = ?`,
     [
       p.surnom ?? null,
@@ -240,6 +246,7 @@ export async function majPerso(db: Pilote, compte: string, p: PersoPossede): Pro
       p.natureId,
       JSON.stringify(p.sorts),
       p.itemId,
+      JSON.stringify(p.talents ?? []),
       p.uid,
       compte,
     ],

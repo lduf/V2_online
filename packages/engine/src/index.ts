@@ -15,3 +15,7 @@ export { ITEMS, ITEMS_PAR_ID } from './data/items.js';
 export { ESPECES, ESPECES_PAR_ID, getEspece } from './data/especes.js';
 export * from './roster.js';
 export * from './variantes.js';
+export * from './tour.js';
+export * from './objectifs.js';
+export * from './essence.js';
+export * from './talents.js';

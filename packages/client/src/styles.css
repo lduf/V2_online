@@ -16,6 +16,7 @@
   --accent-2: #7fb6ff;
   --or: #ffd45e;
   --vert: #43d17c;
+  --essence: #9ef0d6;
   --rouge: #ff5470;
   --rayon: 16px;
   --rayon-s: 10px;
@@ -220,6 +221,10 @@ s {
 
 .ressource--eclats {
   color: var(--accent-2);
+}
+
+.ressource--essence {
+  color: var(--essence);
 }
 
 .contenu {
@@ -612,7 +617,7 @@ s {
 .accueil {
   display: grid;
   gap: 1rem;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
 }
 
 @media (min-width: 980px) {
@@ -859,7 +864,7 @@ s {
 }
 
 .avatar--ko .avatar__corps {
-  animation: tombe 700ms ease-in forwards;
+  animation: disloque 900ms cubic-bezier(0.3, 0, 0.6, 1) forwards;
 }
 
 @keyframes respire {
@@ -919,14 +924,28 @@ s {
   }
 }
 
-@keyframes tombe {
+/*
+ * Un personnage K.O. ne bascule plus : il blanchit sous le coup, se fissure
+ * puis se disperse vers le haut. Bien plus lisible qu'une rotation.
+ */
+@keyframes disloque {
   0% {
-    transform: rotate(0) translateY(0);
+    transform: rotate(0) translateY(0) scale(1);
     opacity: 1;
+    filter: brightness(1);
+  }
+  12% {
+    transform: rotate(-4deg) translateY(-6px) scale(1.06);
+    filter: brightness(4) saturate(0);
+  }
+  30% {
+    transform: rotate(10deg) translateY(2px) scale(0.98);
+    filter: brightness(1.6) saturate(0.4);
   }
   100% {
-    transform: rotate(78deg) translateY(16px);
-    opacity: 0.35;
+    transform: rotate(42deg) translateY(-26px) scale(0.86);
+    opacity: 0;
+    filter: brightness(1) blur(5px);
   }
 }
 
@@ -3304,15 +3323,65 @@ s {
 
 /* ─────────────────────────── Mobile ─────────────────────────── */
 
-@media (max-width: 720px) {
+@media (max-width: 1400px) {
   .nav button i {
     display: none;
   }
   .nav button {
-    padding: 0.5rem 0.65rem;
+    padding: 0.5rem 0.7rem;
   }
+  .nav button span {
+    font-size: 1.05rem;
+  }
+}
+
+@media (max-width: 720px) {
   .entete {
     gap: 0.5rem;
+  }
+  /* Sur téléphone, le logo et les ressources mangeaient toute la largeur :
+     la navigation tombait à zéro pixel et passait sous les jetons, donc plus
+     aucun onglet n'était cliquable. On lui donne sa propre ligne. */
+  .entete {
+    flex-wrap: wrap;
+    padding-bottom: 0.35rem;
+  }
+  .entete__logo {
+    order: 1;
+  }
+  .entete__droite {
+    order: 2;
+    min-width: 0;
+    gap: 0.3rem;
+  }
+  .nav {
+    order: 3;
+    flex: 0 0 100%;
+    padding-bottom: 0.15rem;
+  }
+  .ressources {
+    gap: 0.25rem;
+  }
+  .ressource {
+    font-size: 0.7rem;
+    padding: 0.3rem 0.4rem;
+  }
+  .intro-ecran__corps {
+    min-width: 0;
+  }
+  /* Le classement a huit colonnes : sur téléphone il défile dans son panneau
+     plutôt que d'élargir toute la page. */
+  .table-classement {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  .table-classement th,
+  .table-classement td {
+    padding: 0.35rem 0.45rem;
+  }
+  .nav button {
+    padding: 0.5rem 0.55rem;
   }
   .fiche {
     min-width: 0;
@@ -4002,4 +4071,1198 @@ s {
   color: transparent;
   margin-right: 0.35rem;
   font-weight: 800;
+}
+
+/* ==========================================================================
+   Ouverture de booster
+   La tension doit monter : le dos annonce la rareté avant la révélation.
+   ========================================================================== */
+
+.ouverture {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  grid-template-rows: auto 1fr auto auto;
+  gap: 0.8rem;
+  padding: 1rem;
+  background:
+    radial-gradient(70% 55% at 50% 40%, rgba(60, 25, 90, 0.75), transparent 72%),
+    rgba(6, 3, 14, 0.94);
+  backdrop-filter: blur(10px);
+  animation: fondu 300ms ease-out;
+  overflow-y: auto;
+}
+
+.ouverture__entete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.78rem;
+  color: var(--texte-doux);
+}
+
+.ouverture__scene {
+  display: grid;
+  place-items: center;
+  gap: 1rem;
+  min-height: 0;
+}
+
+.ouverture__consigne {
+  color: var(--texte-doux);
+  font-size: 0.9rem;
+  margin: 0;
+  animation: pulsation 2s ease-in-out infinite;
+}
+
+.ouverture__actions {
+  display: flex;
+  gap: 0.6rem;
+  justify-content: center;
+}
+
+.ouverture__deja {
+  display: flex;
+  gap: 0.4rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  min-height: 60px;
+}
+
+.ouverture__deja .carte {
+  animation: arrive-strip 420ms cubic-bezier(0.3, 1.4, 0.5, 1) backwards;
+}
+
+@keyframes arrive-strip {
+  from {
+    opacity: 0;
+    transform: translateY(-40px) scale(1.4);
+  }
+}
+
+/* ── Le paquet fermé ── */
+
+.paquet {
+  position: relative;
+  width: 210px;
+  height: 294px;
+  border-radius: 16px;
+  border: 2px solid var(--bord, #6a6285);
+  cursor: pointer;
+  display: grid;
+  place-content: center;
+  gap: 0.3rem;
+  color: #fff;
+  background:
+    linear-gradient(150deg, rgba(255, 255, 255, 0.12), transparent 45%),
+    repeating-linear-gradient(
+      52deg,
+      rgba(255, 255, 255, 0.045) 0 10px,
+      transparent 10px 22px
+    ),
+    linear-gradient(165deg, #2b1a4e, #140b26 70%);
+  box-shadow: 0 22px 50px rgba(0, 0, 0, 0.6);
+  animation: flotte-paquet 3.4s ease-in-out infinite;
+  transition:
+    transform 200ms var(--transition),
+    box-shadow 200ms var(--transition);
+  overflow: hidden;
+}
+
+.paquet:hover {
+  transform: scale(1.04) rotate(-1deg);
+}
+
+.paquet:active {
+  transform: scale(0.97);
+}
+
+@keyframes flotte-paquet {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-0.6deg);
+  }
+  50% {
+    transform: translateY(-12px) rotate(0.6deg);
+  }
+}
+
+.paquet__sceau {
+  font-size: 3rem;
+  text-align: center;
+  filter: drop-shadow(0 0 14px currentColor);
+}
+
+.paquet__titre {
+  font-weight: 900;
+  letter-spacing: 0.3em;
+  font-size: 1.1rem;
+  text-align: center;
+  text-indent: 0.3em;
+}
+
+.paquet__sous-titre {
+  font-size: 0.72rem;
+  color: var(--texte-doux);
+  text-align: center;
+}
+
+.paquet__lueur {
+  position: absolute;
+  inset: -40%;
+  background: radial-gradient(circle at 50% 50%, var(--bord-clair, #a49cc4), transparent 62%);
+  opacity: 0.35;
+  animation: respire-lueur 2.6s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes respire-lueur {
+  0%,
+  100% {
+    opacity: 0.22;
+    transform: scale(0.9);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.1);
+  }
+}
+
+/* L'aura du paquet trahit la meilleure carte avant même l'ouverture. */
+.paquet--commun {
+  --bord: #6f7890;
+  --bord-clair: #aab3c4;
+}
+.paquet--rare {
+  --bord: #2f78c4;
+  --bord-clair: #8ccbff;
+  box-shadow: 0 0 34px rgba(74, 168, 255, 0.35), 0 22px 50px rgba(0, 0, 0, 0.6);
+}
+.paquet--epique {
+  --bord: #8b45d8;
+  --bord-clair: #dcb4ff;
+  box-shadow: 0 0 44px rgba(199, 125, 255, 0.45), 0 22px 50px rgba(0, 0, 0, 0.6);
+}
+.paquet--legendaire {
+  --bord: #d98b1f;
+  --bord-clair: #ffdf94;
+  box-shadow: 0 0 60px rgba(255, 190, 80, 0.6), 0 22px 50px rgba(0, 0, 0, 0.6);
+}
+
+.paquet--variante::after {
+  content: '✦';
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  font-size: 1.3rem;
+  background: linear-gradient(120deg, #ffe9a8, #ff8ad0, #8ad0ff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: scintille 1.6s ease-in-out infinite;
+}
+
+/* ── Le retournement ── */
+
+.retournement {
+  position: relative;
+  width: 268px;
+  height: 375px;
+  perspective: 1400px;
+  cursor: pointer;
+}
+
+.retournement__face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  border-radius: 14px;
+  transition: transform 620ms cubic-bezier(0.4, 0, 0.2, 1);
+  transform-style: preserve-3d;
+}
+
+.retournement__dos {
+  transform: rotateY(0deg);
+  display: grid;
+  place-content: center;
+  background:
+    repeating-linear-gradient(
+      48deg,
+      color-mix(in srgb, var(--teinte) 18%, transparent) 0 8px,
+      transparent 8px 18px
+    ),
+    radial-gradient(70% 55% at 50% 45%, color-mix(in srgb, var(--teinte) 34%, transparent), transparent 72%),
+    linear-gradient(160deg, #2b1a4e, #120a22 72%);
+  border: 2px solid var(--teinte);
+  box-shadow:
+    0 0 var(--halo) color-mix(in srgb, var(--teinte) 65%, transparent),
+    inset 0 0 40px color-mix(in srgb, var(--teinte) 28%, transparent),
+    0 22px 50px rgba(0, 0, 0, 0.6);
+  overflow: hidden;
+}
+
+.retournement__avant {
+  transform: rotateY(-180deg);
+  display: grid;
+  place-items: center;
+}
+
+.retournement.est-retournee .retournement__dos {
+  transform: rotateY(180deg);
+}
+
+.retournement.est-retournee .retournement__avant {
+  transform: rotateY(0deg);
+}
+
+.dos__marque {
+  position: relative;
+  z-index: 2;
+  font-size: 3.6rem;
+  text-align: center;
+  color: var(--teinte-claire);
+  filter: drop-shadow(0 0 18px var(--teinte));
+}
+
+/*
+ * Le pré-tell. Le dos annonce la rareté une seconde avant la révélation :
+ * c'est cette seconde qui porte toute la tension de l'ouverture, donc elle
+ * doit être franche et pas subliminale.
+ */
+.retournement {
+  --teinte: #6f7890;
+  --teinte-claire: #cfd6e4;
+  --halo: 18px;
+  --pulsation: 2.4s;
+}
+
+.retournement--commun {
+  --teinte: #7e879e;
+  --teinte-claire: #d6dbe6;
+  --halo: 16px;
+}
+
+.retournement--rare {
+  --teinte: #3f92e0;
+  --teinte-claire: #bfe2ff;
+  --halo: 40px;
+  --pulsation: 1.7s;
+}
+
+.retournement--epique {
+  --teinte: #a75cff;
+  --teinte-claire: #e8ccff;
+  --halo: 64px;
+  --pulsation: 1.1s;
+}
+
+.retournement--legendaire {
+  --teinte: #ffb327;
+  --teinte-claire: #fff0c2;
+  --halo: 92px;
+  --pulsation: 0.66s;
+}
+
+.dos__indice {
+  position: absolute;
+  inset: -14%;
+  z-index: 1;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--teinte) 85%, transparent) 0%,
+    color-mix(in srgb, var(--teinte) 30%, transparent) 42%,
+    transparent 68%
+  );
+  animation: bat-indice var(--pulsation) ease-in-out infinite;
+}
+
+@keyframes bat-indice {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.82);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.08);
+  }
+}
+
+/* Un anneau supplémentaire à partir de l'épique : on sent que ça arrive. */
+.retournement--epique .retournement__dos::after,
+.retournement--legendaire .retournement__dos::after,
+.retournement--variante .retournement__dos::after {
+  content: '';
+  position: absolute;
+  inset: 12px;
+  border-radius: 10px;
+  border: 2px solid var(--teinte-claire);
+  opacity: 0.5;
+  animation: anneau-indice var(--pulsation) ease-out infinite;
+  pointer-events: none;
+}
+
+@keyframes anneau-indice {
+  0% {
+    transform: scale(0.94);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(1.06);
+    opacity: 0;
+  }
+}
+
+.indice--variante {
+  background: conic-gradient(#ff5ea8, #ffd45e, #5effa8, #5ec8ff, #b45eff, #ff5ea8);
+  opacity: 0.6;
+  animation: tourne 2.4s linear infinite;
+}
+
+.retournement--variante {
+  --teinte: #ff8ad0;
+  --teinte-claire: #ffe9a8;
+  --halo: 92px;
+  --pulsation: 0.8s;
+}
+
+/* ── Le flash de révélation ── */
+
+.ouverture__eclair {
+  position: fixed;
+  inset: 0;
+  z-index: 95;
+  pointer-events: none;
+  animation: eclair 620ms ease-out forwards;
+}
+
+.eclair--epique {
+  background: radial-gradient(circle at 50% 45%, rgba(220, 180, 255, 0.85), transparent 62%);
+}
+.eclair--legendaire {
+  background: radial-gradient(circle at 50% 45%, rgba(255, 240, 200, 0.95), transparent 66%);
+}
+
+@keyframes eclair {
+  0% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  22% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.6);
+  }
+}
+
+/* ── Fin de paquet et butin ── */
+
+.ouverture__fin-paquet {
+  display: grid;
+  justify-items: center;
+  gap: 1rem;
+  max-width: 760px;
+}
+
+.ouverture__fin-paquet .bouton--large {
+  max-width: 320px;
+}
+
+.ouverture__resume {
+  display: grid;
+  justify-items: center;
+  gap: 1rem;
+  align-content: start;
+  padding-bottom: 2rem;
+  grid-row: 2 / -1;
+}
+
+.ouverture__resume h2 {
+  font-size: 1.8rem;
+  background: linear-gradient(135deg, #fff, var(--or));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.ouverture__compte {
+  color: var(--texte-doux);
+  margin: 0;
+  text-align: center;
+}
+
+.ouverture__resume .grille-cartes {
+  justify-content: center;
+  max-width: 1100px;
+}
+
+.ouverture__resume .bouton--large {
+  max-width: 320px;
+}
+
+.banniere__regle {
+  font-size: 0.82rem !important;
+  color: var(--texte) !important;
+}
+
+@media (max-width: 720px) {
+  .retournement {
+    width: 210px;
+    height: 294px;
+  }
+  .paquet {
+    width: 176px;
+    height: 246px;
+  }
+}
+
+
+/* ==========================================================================
+   Sensation de combat
+   Arrêt sur image, flash, ralenti fatal. C'est ce qui donne du poids aux coups.
+   ========================================================================== */
+
+/*
+ * L'arrêt sur image fige la scène quelques dizaines de millisecondes à
+ * l'impact. C'est le meilleur rapport effort/effet de tout le jeu : trois
+ * lignes, et chaque coup se sent dans les mains.
+ */
+.combat--gel .arene *,
+.combat--gel .arene {
+  animation-play-state: paused !important;
+}
+
+/* Le ralenti du coup fatal, avec resserrage sur la scène. */
+.combat--fatal .arene {
+  transform: scale(1.06);
+  transition: transform 900ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.combat--fatal .arene * {
+  animation-duration: 2.4s !important;
+}
+
+.arene {
+  transition: transform 500ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+/* Flashs d'écran */
+
+.flash {
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+  pointer-events: none;
+}
+
+.flash--critique {
+  background: radial-gradient(circle at 50% 45%, rgba(255, 246, 214, 0.75), transparent 60%);
+  animation: flash-bref 260ms ease-out forwards;
+  mix-blend-mode: screen;
+}
+
+.flash--super {
+  background: radial-gradient(circle at 50% 45%, rgba(255, 150, 70, 0.6), transparent 62%);
+  animation: flash-bref 220ms ease-out forwards;
+  mix-blend-mode: screen;
+}
+
+.flash--fatal {
+  background: rgba(255, 255, 255, 0.92);
+  animation: flash-bref 320ms ease-out forwards;
+}
+
+@keyframes flash-bref {
+  0% {
+    opacity: 0;
+  }
+  14% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/*
+ * Aberration chromatique sur les critiques : les canaux rouge et cyan se
+ * décalent une fraction de seconde. À la limite du subliminal, mais on le
+ * sent.
+ */
+.combat--gel .arene__ciel {
+  filter: drop-shadow(3px 0 0 rgba(255, 60, 60, 0.5)) drop-shadow(-3px 0 0 rgba(60, 220, 255, 0.5));
+}
+
+/* Le bandeau d'efficacité */
+
+.banniere-efficacite {
+  position: absolute;
+  top: 17%;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  text-align: center;
+  font-weight: 900;
+  font-size: clamp(1.4rem, 5vw, 2.6rem);
+  letter-spacing: 0.16em;
+  color: #fff;
+  text-shadow:
+    0 0 18px #ff8a3d,
+    0 3px 12px rgba(0, 0, 0, 0.8);
+  pointer-events: none;
+  animation: bandeau-traverse 900ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes bandeau-traverse {
+  0% {
+    opacity: 0;
+    transform: translateX(-40%) skewX(-12deg) scale(0.8);
+  }
+  22% {
+    opacity: 1;
+    transform: translateX(0) skewX(-12deg) scale(1);
+  }
+  72% {
+    opacity: 1;
+    transform: translateX(0) skewX(-12deg) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(36%) skewX(-12deg) scale(1.1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flash,
+  .banniere-efficacite {
+    display: none;
+  }
+  .combat--fatal .arene {
+    transform: none;
+  }
+}
+
+/* ==========================================================================
+   La Tour des Rattrapages
+   ========================================================================== */
+
+.escalier {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.escalier__etage {
+  display: grid;
+  grid-template-columns: 2rem 1fr auto;
+  gap: 0.6rem;
+  align-items: center;
+  padding: 0.45rem 0.7rem;
+  border-radius: var(--rayon-s);
+  background: rgba(0, 0, 0, 0.28);
+  border-left: 3px solid var(--texte-faible);
+  font-size: 0.88rem;
+  transition: var(--transition);
+}
+
+.escalier__numero {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  color: var(--texte-faible);
+  text-align: right;
+}
+
+.escalier__nom {
+  color: var(--texte-doux);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.escalier__etage.est-reussi {
+  border-left-color: var(--vert);
+  background: rgba(67, 209, 124, 0.1);
+}
+
+.escalier__etage.est-reussi .escalier__nom,
+.escalier__etage.est-reussi .escalier__numero {
+  color: var(--vert);
+}
+
+.escalier__etage.est-courant {
+  border-left-color: var(--accent);
+  background: linear-gradient(90deg, rgba(255, 79, 163, 0.22), transparent);
+  box-shadow: 0 0 0 1px rgba(255, 79, 163, 0.35);
+}
+
+.escalier__etage.est-courant .escalier__nom {
+  color: #fff;
+  font-weight: 600;
+}
+
+.escalier__etage.est-a-venir {
+  opacity: 0.5;
+}
+
+/* Le dernier étage a droit à son traitement. */
+.escalier__etage:first-child .escalier__nom {
+  font-weight: 700;
+  background: linear-gradient(120deg, #ffe9a8, #ffb347);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.escalier__marque {
+  font-size: 0.8rem;
+}
+
+.benedictions {
+  margin: 1.2rem 0;
+}
+
+.benedictions__grille {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.6rem;
+}
+
+.benediction {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  gap: 0.25rem;
+  padding: 1rem 0.8rem;
+  border-radius: var(--rayon);
+  border: 1px solid var(--panneau-bord);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.06), rgba(0, 0, 0, 0.3));
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.benediction:hover:not(:disabled) {
+  transform: translateY(-3px);
+  border-color: var(--accent);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45);
+}
+
+.benediction:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.benediction__emoji {
+  font-size: 2.2rem;
+}
+
+.benediction strong {
+  font-size: 0.95rem;
+}
+
+.benediction small {
+  font-size: 0.76rem;
+  color: var(--texte-doux);
+  line-height: 1.4;
+}
+
+.benediction.rarete--epique {
+  border-color: rgba(199, 125, 255, 0.55);
+  box-shadow: 0 0 22px rgba(199, 125, 255, 0.18);
+}
+
+.benediction.rarete--rare {
+  border-color: rgba(74, 168, 255, 0.45);
+}
+
+.benedictions__acquises {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+}
+
+.benediction-puce {
+  font-size: 0.76rem;
+  padding: 0.22rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid var(--panneau-bord);
+}
+
+.benediction-puce.rarete--epique {
+  border-color: rgba(199, 125, 255, 0.6);
+  color: #dcb4ff;
+}
+
+.tour__reprise,
+.tour__lancement {
+  display: grid;
+  justify-items: center;
+  gap: 0.6rem;
+  margin: 1.2rem 0;
+}
+
+.tour__reprise .bouton--large,
+.tour__lancement .bouton--large {
+  max-width: 420px;
+}
+
+.tour__bareme {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 0.4rem;
+}
+
+.bareme {
+  display: grid;
+  justify-items: center;
+  gap: 0.1rem;
+  padding: 0.6rem 0.4rem;
+  border-radius: var(--rayon-s);
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--panneau-bord);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  color: var(--texte-doux);
+  opacity: 0.6;
+}
+
+.bareme strong {
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.8rem;
+  color: var(--texte);
+}
+
+.bareme em {
+  font-style: normal;
+  font-size: 0.66rem;
+  color: var(--or);
+}
+
+.bareme.est-atteint {
+  opacity: 1;
+  border-color: var(--vert);
+}
+
+/* ==========================================================================
+   Onboarding, objectifs et contrats
+   ========================================================================== */
+
+.nav__pastille {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 3px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.6rem;
+  font-weight: 800;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 0 0 2px var(--fond);
+}
+
+.nav button {
+  position: relative;
+}
+
+/* L'introduction d'écran, montrée une seule fois par compte. */
+
+.intro-ecran {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  padding: 1rem 1.1rem;
+  border-radius: var(--rayon);
+  border: 1px solid rgba(255, 79, 163, 0.4);
+  background: linear-gradient(135deg, rgba(255, 79, 163, 0.14), rgba(127, 182, 255, 0.08));
+  animation: entree-toast 320ms var(--transition);
+}
+
+.intro-ecran__corps {
+  flex: 1;
+  min-width: 240px;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.intro-ecran__corps strong {
+  font-size: 1.05rem;
+}
+
+.intro-ecran__corps p {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: var(--texte-doux);
+}
+
+.intro-ecran__corps p + p {
+  margin-top: 0.4rem;
+}
+
+/* Le fil d'objectifs */
+
+.objectifs {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.objectif {
+  display: grid;
+  grid-template-columns: 2rem 1fr auto;
+  gap: 0.7rem;
+  align-items: center;
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--rayon-s);
+  background: rgba(0, 0, 0, 0.26);
+  border-left: 3px solid var(--texte-faible);
+  transition: var(--transition);
+}
+
+.objectif.est-fait {
+  border-left-color: var(--or);
+  background: rgba(255, 212, 94, 0.1);
+}
+
+.objectif.est-reclame {
+  opacity: 0.45;
+  border-left-color: var(--vert);
+}
+
+.objectif__emoji {
+  font-size: 1.3rem;
+  text-align: center;
+}
+
+.objectif__corps {
+  min-width: 0;
+  display: grid;
+  gap: 0.1rem;
+}
+
+.objectif__corps strong {
+  font-size: 0.9rem;
+}
+
+.objectif__corps small {
+  font-size: 0.78rem;
+  color: var(--texte-doux);
+}
+
+.objectif__barre {
+  position: relative;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.5);
+  margin-top: 0.25rem;
+  overflow: visible;
+}
+
+.objectif__barre i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--accent-2), var(--accent));
+  transition: width 400ms var(--transition);
+}
+
+.objectif__barre b {
+  position: absolute;
+  right: 0;
+  top: -1.05rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.62rem;
+  color: var(--texte-faible);
+  font-weight: 400;
+}
+
+.objectif__action .bouton {
+  padding: 0.35rem 0.7rem;
+  font-size: 0.8rem;
+}
+
+.objectif__gain {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  color: var(--texte-faible);
+  white-space: nowrap;
+}
+
+.objectif__coche {
+  color: var(--vert);
+  font-weight: 800;
+}
+
+/* Récompense de connexion */
+
+.connexion-jour {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.connexion-jour > div:first-child {
+  flex: 1;
+  min-width: 200px;
+}
+
+.connexion-jour h3 {
+  margin-bottom: 0.2rem;
+}
+
+.connexion-jour .panneau__aide {
+  margin: 0;
+}
+
+.connexion-jour__paliers {
+  display: flex;
+  gap: 0.3rem;
+}
+
+.palier {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--panneau-bord);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.74rem;
+  color: var(--texte-faible);
+}
+
+.palier.est-passe {
+  border-color: var(--vert);
+  color: var(--vert);
+}
+
+.palier.est-courant {
+  border-color: var(--accent);
+  background: rgba(255, 79, 163, 0.2);
+  color: #fff;
+  animation: pulsation 1.6s ease-in-out infinite;
+}
+
+.palier.est-booster {
+  border-color: var(--or);
+  color: var(--or);
+}
+
+@media (min-width: 980px) {
+  .panneau--connexion,
+  .panneau--objectifs {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Choix du champion à l'inscription */
+
+.starters {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.starter {
+  display: flex;
+  gap: 0.7rem;
+  align-items: center;
+  text-align: left;
+  padding: 0.6rem;
+  border-radius: var(--rayon);
+  border: 1px solid var(--panneau-bord);
+  background: rgba(0, 0, 0, 0.26);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.starter:hover {
+  border-color: var(--el);
+  transform: translateY(-2px);
+}
+
+.starter.est-choisi {
+  border-color: var(--accent);
+  background: rgba(255, 79, 163, 0.12);
+  box-shadow: 0 0 0 1px rgba(255, 79, 163, 0.4);
+}
+
+.starter__texte {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.starter__texte strong {
+  font-size: 0.92rem;
+  color: var(--el);
+}
+
+.starter__texte small {
+  font-size: 0.78rem;
+  color: var(--texte-doux);
+  line-height: 1.45;
+}
+
+/* Le coach en combat */
+
+.coach {
+  display: flex;
+  gap: 0.7rem;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 0.7rem 0.9rem;
+  border-radius: var(--rayon);
+  border: 1px solid rgba(255, 212, 94, 0.45);
+  background: linear-gradient(135deg, rgba(255, 212, 94, 0.14), rgba(255, 79, 163, 0.08));
+  animation: entree-toast 300ms var(--transition);
+}
+
+.coach__tete {
+  font-size: 1.5rem;
+}
+
+.coach p {
+  flex: 1;
+  min-width: 220px;
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+/* ─────────────────────────── Talents ─────────────────────────── */
+
+.onglets__pastille {
+  display: inline-grid;
+  place-items: center;
+  min-width: 17px;
+  height: 17px;
+  margin-left: 0.35rem;
+  padding: 0 0.25rem;
+  border-radius: 999px;
+  font-size: 0.65rem;
+  background: var(--accent);
+  color: #fff;
+}
+
+.etiquette--alerte {
+  background: rgba(255, 79, 163, 0.22);
+  border-color: var(--accent);
+  color: #ffd6ea;
+}
+
+.talents__palier {
+  display: grid;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.talents__entete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.talents__choix {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 0.5rem;
+}
+
+.talent {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.65rem 0.7rem;
+  text-align: left;
+  border-radius: 12px;
+  border: 1px solid var(--panneau-bord);
+  background: rgba(255, 255, 255, 0.03);
+  color: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, transform 0.15s;
+}
+
+.talent:hover:not(:disabled) {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+
+.talent strong {
+  font-size: 0.86rem;
+}
+
+.talent small {
+  color: var(--texte-doux);
+  line-height: 1.35;
+}
+
+.talent em {
+  font-size: 0.72rem;
+  color: var(--accent);
+}
+
+.talent.est-actif {
+  border-color: var(--accent);
+  background: linear-gradient(160deg, rgba(255, 79, 163, 0.18), rgba(255, 255, 255, 0.03));
+}
+
+/* Un palier non atteint reste lisible : on grise, on ne cache pas. */
+.talent:disabled:not(.est-actif) {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ──────────────────────────── Forge ──────────────────────────── */
+
+.forge__filtres {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.9rem;
+}
+
+.bouton--mini {
+  font-size: 0.72rem;
+  padding: 0.28rem 0.6rem;
+}
+
+.bouton--mini.est-actif {
+  border-color: var(--accent);
+  background: rgba(255, 79, 163, 0.18);
+  color: #ffd6ea;
+}
+
+/* Un sort qu'au moins un personnage du joueur peut apprendre : le bandeau
+   remplace la remise et évite de forger un sort que personne ne portera. */
+.offre--utile .offre__remise {
+  background: var(--vert);
+  color: #06241a;
+  font-size: 0.6rem;
+  padding: 0.12rem 1.7rem;
+}
+
+.detail__passif--talent {
+  border-left-color: var(--accent);
+  opacity: 0.92;
 }

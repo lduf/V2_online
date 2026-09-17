@@ -1,4 +1,5 @@
 import { ESPECES, ESPECES_PAR_ID, getEspece } from './data/especes.js';
+import { choixTalents, PALIERS_TALENT } from './talents.js';
 import { ITEMS } from './data/items.js';
 import { getSortDef } from './data/sorts.js';
 import { Rng } from './rng.js';
@@ -64,6 +65,11 @@ export function creerPersoAleatoire(
     itemId: item,
     obtenuLe: Date.now(),
     chromatique: tirerChromatique(rng, opts.bonusVariante ?? 1),
+    // Un adversaire généré choisit ses talents au hasard : sans ça, un bot de
+    // niveau 50 se battrait avec deux paliers de retard sur le joueur.
+    talents: PALIERS_TALENT.filter((pa) => niveau >= pa).map(
+      (pa) => rng.pick(choixTalents(espece.role, pa)).id,
+    ),
   };
   return { perso, sorts };
 }
@@ -143,13 +149,55 @@ export function equipeBot(
 /** Roster de départ offert à la création de compte. */
 export const ESPECES_DEPART = ['maxence', 'ondine', 'brigitte', 'rocco'];
 
+/**
+ * Les trois champions proposés à l'inscription. Trois façons de jouer
+ * franchement distinctes, pour que le choix veuille dire quelque chose dès
+ * la première minute.
+ */
+export interface Starter {
+  especeId: string;
+  accroche: string;
+  pitch: string;
+}
+
+export const STARTERS: Starter[] = [
+  {
+    especeId: 'maxence',
+    accroche: 'Cogne de plus en plus fort',
+    pitch:
+      'Ses dégâts montent de 7 % à chaque round. Plus le combat dure, plus il fait mal. Pour ceux qui aiment appuyer.',
+  },
+  {
+    especeId: 'ondine',
+    accroche: 'Use l’adversaire',
+    pitch:
+      'Elle récupère 5 % de ses PV à la fin de chacun de ses tours. Frappe à distance et ne s’effondre jamais vraiment.',
+  },
+  {
+    especeId: 'brigitte',
+    accroche: 'Ne tombe pas',
+    pitch:
+      'Elle encaisse 18 % de dégâts physiques en moins et a le plus gros réservoir de PV du roster. Pour gagner en durant.',
+  },
+];
+
+export const STARTERS_PAR_ID: Record<string, Starter> = Object.fromEntries(
+  STARTERS.map((s) => [s.especeId, s]),
+);
+
 /** Niveau des personnages offerts : assez haut pour que le premier combat respire. */
 export const NIVEAU_DEPART = 12;
 
-export function rosterDepart(rng: Rng): EquipeGeneree {
+/**
+ * Roster de départ. Le champion choisi à l'inscription est placé en tête :
+ * c'est lui qui entre en premier au combat.
+ */
+export function rosterDepart(rng: Rng, starterId?: string): EquipeGeneree {
   const persos: PersoPossede[] = [];
   const sorts = new Map<string, SortPossede>();
-  for (const id of ESPECES_DEPART) {
+  const valide = starterId && STARTERS_PAR_ID[starterId] ? starterId : ESPECES_DEPART[0];
+  const ordre = [valide, ...ESPECES_DEPART.filter((id) => id !== valide)];
+  for (const id of ordre) {
     const g = creerPersoAleatoire(id, NIVEAU_DEPART, rng, { plancherIv: 6, prefixe: 'p' });
     persos.push(g.perso);
     for (const s of g.sorts) sorts.set(s.uid, s);

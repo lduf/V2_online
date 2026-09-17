@@ -44,7 +44,13 @@ export function progression(xp: number): ProgressionNiveau {
   };
 }
 
-export type ModeMatch = 'SOLO_FACILE' | 'SOLO_NORMAL' | 'SOLO_DIFFICILE' | 'CLASSE' | 'AMICAL';
+export type ModeMatch =
+  | 'SOLO_FACILE'
+  | 'SOLO_NORMAL'
+  | 'SOLO_DIFFICILE'
+  | 'CLASSE'
+  | 'AMICAL'
+  | 'TOUR';
 
 export interface Recompenses {
   credits: number;
@@ -58,6 +64,9 @@ const BASES: Record<ModeMatch, { credits: number; xp: number; eclats: number }> 
   SOLO_DIFFICILE: { credits: 300, xp: 820, eclats: 4 },
   CLASSE: { credits: 260, xp: 700, eclats: 3 },
   AMICAL: { credits: 90, xp: 260, eclats: 0 },
+  // Un étage de tour paie peu : l'essentiel de la récompense tombe à la fin
+  // de la tentative, pour que monter plus haut soit le seul objectif.
+  TOUR: { credits: 45, xp: 210, eclats: 0 },
 };
 
 /**

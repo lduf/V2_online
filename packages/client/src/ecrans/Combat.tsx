@@ -43,6 +43,13 @@ export function Combat({ combatId }: { combatId: string }) {
   );
   const [pose, setPose] = useState<Record<string, Pose>>({});
   const [secousse, setSecousse] = useState(0);
+  /** Arrêt sur image : fige la scène quelques dizaines de millisecondes à l'impact. */
+  const [gel, setGel] = useState(false);
+  const [flash, setFlash] = useState<'critique' | 'super' | 'fatal' | null>(null);
+  const [fatal, setFatal] = useState(false);
+  const [banniere, setBanniere] = useState<{ texte: string; cle: number } | null>(null);
+  /** Conseil contextuel, montré une seule fois par compte et par situation. */
+  const [conseil, setConseil] = useState<{ cle: string; texte: string } | null>(null);
   const [enLecture, setEnLecture] = useState(false);
   const [vitesse, setVitesse] = useState<number>(
     Number(localStorage.getItem('arene.vitesse') ?? 1.6),
@@ -57,6 +64,8 @@ export function Combat({ combatId }: { combatId: string }) {
   const cleFlottant = useRef(0);
   const monte = useRef(true);
   const pompeActive = useRef(false);
+  /** Millisecondes d'arrêt sur image à ajouter avant le prochain événement. */
+  const hitstop = useRef(0);
   const etatRef = useRef<EtatCombatClient | null>(null);
   const vitesseRef = useRef(vitesse);
   vitesseRef.current = vitesse;
@@ -69,6 +78,31 @@ export function Combat({ combatId }: { combatId: string }) {
     if (!v) return '';
     return v.equipes[cote].unites[v.equipes[cote].actif]?.uid ?? '';
   };
+
+  /**
+   * Les conseils apparaissent au moment où la situation se produit, pas dans
+   * un panneau d'aide que personne ne lit. Chacun n'est montré qu'une fois.
+   */
+  const conseillerRef = useRef<(cle: string, texte: string) => void>(() => undefined);
+
+  const conseiller = (cle: string, texte: string): void => {
+    let vus: string[] = [];
+    try {
+      vus = JSON.parse(localStorage.getItem('arene.coach') ?? '[]') as string[];
+    } catch {
+      vus = [];
+    }
+    if (vus.includes(cle)) return;
+    vus.push(cle);
+    try {
+      localStorage.setItem('arene.coach', JSON.stringify(vus));
+    } catch {
+      /* navigation privée : le conseil réapparaîtra, ce n'est pas grave */
+    }
+    setConseil({ cle, texte });
+  };
+
+  conseillerRef.current = conseiller;
 
   const pousserFlottant = (texte: string, ton: string): void => {
     const cle = ++cleFlottant.current;
@@ -127,6 +161,13 @@ export function Combat({ combatId }: { combatId: string }) {
       case 'DE':
         setDe({ faces: e.faces, resultat: e.resultat, parfait: e.parfait, cle: Date.now() });
         jouer(e.parfait ? 'deParfait' : 'de');
+        conseiller(
+          'de',
+          `Le dé décide de la puissance du sort. Ici un d${e.faces} : peu de faces, c’est fiable ; beaucoup, c’est la loterie. Tomber sur la face maximale déclenche un coup critique.`,
+        );
+        if (e.parfait) {
+          conseiller('de_parfait', 'Dé parfait ! La face maximale : le coup part en critique.');
+        }
         break;
       case 'RATE':
         pousserFlottant('RATÉ', 'info');
@@ -138,11 +179,48 @@ export function Combat({ combatId }: { combatId: string }) {
           e.efficacite === 'SUPER' ? ' ⚡' : e.efficacite === 'FAIBLE' ? ' …' : '';
         pousserFlottant(
           `-${e.montant}${suffixe}`,
-          e.critique ? 'critique' : e.efficacite === 'SUPER' ? 'super' : e.efficacite === 'FAIBLE' ? 'faible' : 'degat',
+          e.critique
+            ? 'critique'
+            : e.efficacite === 'SUPER'
+              ? 'super'
+              : e.efficacite === 'FAIBLE'
+                ? 'faible'
+                : 'degat',
         );
-        jouer(e.critique ? 'critique' : e.efficacite === 'SUPER' ? 'super' : e.efficacite === 'FAIBLE' ? 'faible' : 'impact');
+        jouer(
+          e.critique
+            ? 'critique'
+            : e.efficacite === 'SUPER'
+              ? 'super'
+              : e.efficacite === 'FAIBLE'
+                ? 'faible'
+                : 'impact',
+        );
         setSecousse(e.critique ? 18 : e.efficacite === 'SUPER' ? 14 : 8);
         setTimeout(() => monte.current && setSecousse(0), 260);
+
+        // Arrêt sur image proportionnel à la violence du coup : c'est lui qui
+        // donne du poids, bien plus que la secousse.
+        const arret = e.critique ? 150 : e.efficacite === 'SUPER' ? 115 : e.efficacite === 'FAIBLE' ? 35 : 75;
+        setGel(true);
+        setTimeout(() => monte.current && setGel(false), arret);
+        hitstop.current = arret;
+
+        if (e.critique) {
+          setFlash('critique');
+          setTimeout(() => monte.current && setFlash(null), 260);
+        } else if (e.efficacite === 'SUPER') {
+          setFlash('super');
+          setTimeout(() => monte.current && setFlash(null), 220);
+        }
+        if (e.efficacite === 'SUPER') {
+          conseiller(
+            'super',
+            'Super efficace : +50 % de dégâts. Chaque élément est fort contre un autre — le Codex a la table complète.',
+          );
+          setBanniere({ texte: 'SUPER EFFICACE', cle: Date.now() });
+          setTimeout(() => monte.current && setBanniere(null), 900);
+        }
         break;
       }
       case 'SOIN':
@@ -160,9 +238,18 @@ export function Combat({ combatId }: { combatId: string }) {
         break;
       case 'KO':
         setPose((p) => ({ ...p, [e.uniteUid]: 'ko' }));
+        conseiller(
+          'ko',
+          'Un combattant à terre est remplacé par un autre de ton équipe. Il ne revient pas de ce combat.',
+        );
         jouer('ko');
         setSecousse(22);
         setTimeout(() => monte.current && setSecousse(0), 400);
+        // Le coup qui met K.O. passe au ralenti, avec un resserrage sur la cible.
+        setFatal(true);
+        setFlash('fatal');
+        setTimeout(() => monte.current && setFlash(null), 320);
+        setTimeout(() => monte.current && setFatal(false), 1100);
         break;
       case 'SWITCH':
         setAffichage((a) => {
@@ -183,7 +270,9 @@ export function Combat({ combatId }: { combatId: string }) {
         break;
     }
 
-    minuteur.current = window.setTimeout(jouerProchain, duree(e) / vitesseRef.current);
+    const pause = duree(e) / vitesseRef.current + hitstop.current;
+    hitstop.current = 0;
+    minuteur.current = window.setTimeout(jouerProchain, pause);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -249,6 +338,16 @@ export function Combat({ combatId }: { combatId: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [etat?.vue.auTour, etat?.termine, combatId]);
 
+  // Premier tour jouable : on explique l'énergie au moment où elle compte.
+  useEffect(() => {
+    if (!etat || etat.termine || enLecture) return;
+    if (etat.vue.auTour !== etat.vue.moi) return;
+    conseillerRef.current(
+      'premier_tour',
+      'À toi. Chaque sort coûte de l’énergie : tu en regagnes 22 par tour, et l’attaque de base en rend 30 de plus. Impossible d’enchaîner ses meilleurs sorts indéfiniment.',
+    );
+  }, [etat, enLecture]);
+
   // L'écran de fin n'apparaît qu'une fois toutes les animations jouées.
   useEffect(() => {
     if (etat?.termine && !enLecture && !pompeActive.current && file.current.length === 0) {
@@ -300,9 +399,22 @@ export function Combat({ combatId }: { combatId: string }) {
 
   return (
     <div
-      className={`combat ${secousse > 0 ? 'combat--secoue' : ''}`}
+      className={[
+        'combat',
+        secousse > 0 ? 'combat--secoue' : '',
+        gel ? 'combat--gel' : '',
+        fatal ? 'combat--fatal' : '',
+      ]
+        .filter(Boolean)
+        .join(' ')}
       style={{ '--secousse': `${secousse}px` } as React.CSSProperties}
     >
+      {flash && <div className={`flash flash--${flash}`} aria-hidden />}
+      {banniere && (
+        <div key={banniere.cle} className="banniere-efficacite" aria-hidden>
+          {banniere.texte}
+        </div>
+      )}
       <ArenePlateau
         monActif={monActif}
         sonActif={sonActif}
@@ -354,6 +466,16 @@ export function Combat({ combatId }: { combatId: string }) {
           </button>
         )}
       </div>
+
+      {conseil && (
+        <div className="coach">
+          <span className="coach__tete">🎓</span>
+          <p>{conseil.texte}</p>
+          <button className="bouton bouton--fantome" onClick={() => setConseil(null)}>
+            Compris
+          </button>
+        </div>
+      )}
 
       {!etat.termine && (
         <PanneauActions

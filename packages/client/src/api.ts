@@ -57,6 +57,7 @@ export interface CompteInfo {
   pseudo: string;
   credits: number;
   eclats: number;
+  essence: number;
   elo: number;
   parties: number;
   victoires: number;
@@ -129,6 +130,46 @@ export interface LigneClassement {
   serie: number;
 }
 
+export interface ObjectifVue {
+  id: string;
+  nom: string;
+  texte: string;
+  emoji: string;
+  valeur: number;
+  cible: number;
+  fait: boolean;
+  reclame: boolean;
+  recompense: { credits?: number; eclats?: number };
+}
+
+export interface VueObjectifs {
+  premiersPas: ObjectifVue[];
+  contrats: ObjectifVue[];
+  aReclamer: number;
+  connexion: {
+    palier: number;
+    reclamableAujourdhui: boolean;
+    cycle: { jour: number; recompense: { credits?: number; eclats?: number }; booster?: boolean }[];
+  };
+  vuIntro: string[];
+  premiersPasFinis: boolean;
+}
+
+export interface VueTour {
+  enCours: boolean;
+  etage: number;
+  etages: number;
+  nomEtage: string;
+  bonus: string[];
+  choix: string[] | null;
+  combatId: string | null;
+  termine: boolean;
+  victoire: boolean;
+  pv: Record<string, number>;
+  tentativeGratuiteDispo: boolean;
+  coutTentative: number;
+}
+
 export interface EtatFile {
   enFile: boolean;
   combatId: string | null;
@@ -153,10 +194,11 @@ export interface LigneMatch {
 // ───────────────────────────── Appels ─────────────────────────────
 
 export const api = {
-  inscription: (pseudo: string, motDePasse: string) =>
+  inscription: (pseudo: string, motDePasse: string, starter?: string) =>
     requete<{ token: string; compte: CompteInfo }>('POST', '/auth/inscription', {
       pseudo,
       motDePasse,
+      starter,
     }),
   connexion: (pseudo: string, motDePasse: string) =>
     requete<{ token: string; compte: CompteInfo }>('POST', '/auth/connexion', {
@@ -178,9 +220,17 @@ export const api = {
   hyperEntrainement: (uid: string, stat: string) =>
     requete<Profil>('POST', `/persos/${uid}/hyper`, { stat }),
   rerollGenesSort: (uid: string) => requete<Profil>('POST', `/sorts/${uid}/genes`, {}),
+  dissoudrePerso: (uid: string) =>
+    requete<Profil & { gain: number }>('POST', `/persos/${uid}/dissoudre`, {}),
+  dissoudreSort: (uid: string) =>
+    requete<Profil & { gain: number }>('POST', `/sorts/${uid}/dissoudre`, {}),
+  fabriquer: (defId: string) =>
+    requete<Profil & { sort: SortPossede }>('POST', '/fabriquer', { defId }),
+  choisirTalent: (uid: string, palier: number, talentId: string) =>
+    requete<Profil & { cout: number }>('POST', `/persos/${uid}/talent`, { palier, talentId }),
 
-  invoquer: (banniere: string, nombre: number) =>
-    requete<Profil & { tirages: unknown[] }>('POST', '/invocation', { banniere, nombre }),
+  invoquer: (banniere: string, lot: boolean) =>
+    requete<Profil & { boosters: unknown[] }>('POST', '/invocation', { banniere, lot }),
   boutique: () => requete<Boutique>('GET', '/boutique'),
   acheter: (kind: string, id: string) =>
     requete<Profil & { prix: number; obtenu: unknown }>('POST', '/boutique/achat', { kind, id }),
@@ -202,6 +252,23 @@ export const api = {
     requete<EtatCombatClient>('POST', `/combat/${id}/action`, { action, depuis }),
   abandonner: (id: string, depuis: number) =>
     requete<EtatCombatClient>('POST', `/combat/${id}/abandon`, { depuis }),
+
+  objectifs: () => requete<VueObjectifs>('GET', '/objectifs'),
+  reclamerObjectif: (id: string) =>
+    requete<Profil & { credits: number; eclats: number }>('POST', `/objectifs/${id}/reclamer`, {}),
+  reclamerConnexion: () =>
+    requete<Profil & { palier: number; credits: number; eclats: number; booster?: boolean }>(
+      'POST',
+      '/connexion/reclamer',
+      {},
+    ),
+  marquerIntro: (ecran: string) =>
+    requete<{ vuIntro: string[] }>('POST', `/intro/${ecran}`, {}),
+
+  tour: () => requete<VueTour>('GET', '/tour'),
+  tourDemarrer: () => requete<VueTour>('POST', '/tour/demarrer', {}),
+  tourBonus: (id: string) => requete<VueTour>('POST', '/tour/bonus', { id }),
+  tourAbandonner: () => requete<VueTour>('POST', '/tour/abandonner', {}),
 
   rejoindreFile: () => requete<EtatFile>('POST', '/file/rejoindre', {}),
   etatFile: () => requete<EtatFile>('GET', '/file/etat'),

@@ -1,22 +1,25 @@
 import { useEffect, useState } from 'react';
 import {
+  coutFabrication,
   ESPECES_PAR_ID,
   INFO_ELEMENTS,
   ITEMS_PAR_ID,
+  PLANCHER_IV_FABRICATION,
+  SORTS,
   SORTS_PAR_ID,
 } from '@arene/engine';
 import { api, ErreurApi, type Boutique as BoutiqueData, type OffreBoutique } from '../api';
 import { useApp } from '../store';
 import { jouer } from '../son';
 import { Avatar } from '../art/Avatar';
-import { Chargement, Rarete } from '../composants';
+import { Chargement, Rarete, Vide } from '../composants';
 
 export function Boutique() {
   const profil = useApp((s) => s.profil)!;
   const appliquerProfil = useApp((s) => s.appliquerProfil);
   const notifier = useApp((s) => s.notifier);
   const [data, setData] = useState<BoutiqueData | null>(null);
-  const [onglet, setOnglet] = useState<'rotation' | 'permanents'>('rotation');
+  const [onglet, setOnglet] = useState<'rotation' | 'permanents' | 'forge'>('rotation');
   const [achat, setAchat] = useState<string | null>(null);
 
   useEffect(() => {
@@ -65,19 +68,26 @@ export function Boutique() {
           >
             Fonds de rayon ({data.permanents.length})
           </button>
+          <button className={onglet === 'forge' ? 'est-actif' : ''} onClick={() => setOnglet('forge')}>
+            Forge 💠
+          </button>
         </div>
 
-        <div className="boutique__grille">
-          {liste.map((o) => (
-            <OffreCarte
-              key={o.kind + o.id}
-              offre={o}
-              credits={profil.compte.credits}
-              occupe={achat === o.kind + o.id}
-              onAcheter={() => acheter(o)}
-            />
-          ))}
-        </div>
+        {onglet === 'forge' ? (
+          <Forge />
+        ) : (
+          <div className="boutique__grille">
+            {liste.map((o) => (
+              <OffreCarte
+                key={o.kind + o.id}
+                offre={o}
+                credits={profil.compte.credits}
+                occupe={achat === o.kind + o.id}
+                onAcheter={() => acheter(o)}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -164,5 +174,101 @@ function OffreCarte({
         </button>
       </div>
     </div>
+  );
+}
+
+/**
+ * La Forge est la contrepartie déterministe de l'invocation : plus cher qu'un
+ * booster à l'unité, mais on choisit exactement ce qui sort. C'est ce qui rend
+ * la dissolution des doublons intéressante — l'essence a une destination.
+ */
+function Forge() {
+  const profil = useApp((s) => s.profil)!;
+  const appliquerProfil = useApp((s) => s.appliquerProfil);
+  const notifier = useApp((s) => s.notifier);
+  const [occupe, setOccupe] = useState<string | null>(null);
+  const [element, setElement] = useState<string>('TOUS');
+
+  const fabriquer = async (defId: string) => {
+    setOccupe(defId);
+    try {
+      const r = await api.fabriquer(defId);
+      appliquerProfil(r);
+      jouer('invocation');
+      notifier(`${SORTS_PAR_ID[defId].nom} forgé !`, 'bien');
+    } catch (e) {
+      notifier(e instanceof ErreurApi ? e.message : 'Fabrication impossible.', 'mal');
+    } finally {
+      setOccupe(null);
+    }
+  };
+
+  // Les espèces du joueur déterminent ce qui lui est utile : on remonte en tête
+  // les sorts qu'au moins un de ses personnages peut apprendre.
+  const apprenables = new Set(
+    profil.persos.flatMap((p) => ESPECES_PAR_ID[p.especeId]?.pool ?? []),
+  );
+  const elements = ['TOUS', ...Object.keys(INFO_ELEMENTS)];
+  const liste = SORTS.filter((s) => element === 'TOUS' || s.element === element).sort((a, b) => {
+    const ua = apprenables.has(a.id) ? 0 : 1;
+    const ub = apprenables.has(b.id) ? 0 : 1;
+    return ua - ub || coutFabrication(a.id) - coutFabrication(b.id);
+  });
+
+  return (
+    <>
+      <p className="panneau__aide">
+        La Forge produit le sort que tu désignes, sans passer par le hasard. Ses gènes sont tirés
+        avec un plancher de {PLANCHER_IV_FABRICATION}/31 : corrects, jamais parfaits — un exemplaire
+        forgé ne remplace pas un coup de chance en booster. Tu as{' '}
+        <strong>💠 {profil.compte.essence.toLocaleString('fr-FR')}</strong> d’essence.
+      </p>
+      <div className="forge__filtres">
+        {elements.map((e) => (
+          <button
+            key={e}
+            className={`bouton bouton--mini ${element === e ? 'est-actif' : ''}`}
+            onClick={() => setElement(e)}
+          >
+            {e === 'TOUS' ? 'Tous' : `${INFO_ELEMENTS[e as keyof typeof INFO_ELEMENTS].emoji} ${INFO_ELEMENTS[e as keyof typeof INFO_ELEMENTS].nom}`}
+          </button>
+        ))}
+      </div>
+      <div className="boutique__grille">
+        {liste.length === 0 && <Vide texte="Aucun sort de cet élément." emoji="📜" />}
+        {liste.map((s) => {
+          const cout = coutFabrication(s.id);
+          const abordable = profil.compte.essence >= cout;
+          return (
+            <div
+              key={s.id}
+              className={`offre rarete--${s.rarete.toLowerCase()} ${apprenables.has(s.id) ? 'offre--utile' : ''}`}
+              style={{ '--el': INFO_ELEMENTS[s.element].couleur } as React.CSSProperties}
+            >
+              {apprenables.has(s.id) && <span className="offre__remise">apprenable</span>}
+              <div className="offre__corps">
+                <span className="offre__emoji">{INFO_ELEMENTS[s.element].emoji}</span>
+                <strong>{s.nom}</strong>
+                <small>
+                  {s.puissance > 0 && `⚔ ${s.puissance} · `}
+                  {s.soin > 0 && `✚ ${s.soin} · `}🎲 d{s.de} · ⚡ {s.cout}
+                </small>
+                <em>{s.texte}</em>
+              </div>
+              <div className="offre__bas">
+                <Rarete rarete={s.rarete} />
+                <button
+                  className={`bouton ${abordable ? 'bouton--primaire' : ''}`}
+                  disabled={!abordable || occupe !== null}
+                  onClick={() => fabriquer(s.id)}
+                >
+                  💠 {cout.toLocaleString('fr-FR')}
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </>
   );
 }

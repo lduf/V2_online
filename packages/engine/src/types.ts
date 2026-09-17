@@ -202,6 +202,8 @@ export interface PersoPossede {
   obtenuLe: number;
   /** Variante cosmétique « Chromatique » : robe alternative et particules. */
   chromatique?: boolean;
+  /** Talents choisis aux paliers 25 et 50 (voir `talents.ts`). */
+  talents?: string[];
 }
 
 /** Stats finales calculées pour le combat. */
@@ -242,6 +244,7 @@ export interface UniteCombat {
   element: Element;
   role: Role;
   passifId: string;
+  talents: string[];
   itemId: string | null;
   art: ArtSpec;
   chromatique: boolean;
@@ -277,6 +280,15 @@ export interface EquipeCombat {
 
 export type PhaseCombat = 'CHOIX' | 'TERMINE';
 
+/** Ce qu'un camp a accompli pendant le combat, pour les objectifs. */
+export interface StatsCote {
+  desParfaits: number;
+  meilleurCoup: number;
+  critiques: number;
+  superEfficaces: number;
+  changements: number;
+}
+
 export type Cote = 0 | 1;
 
 export interface EtatCombat {
@@ -296,6 +308,8 @@ export interface EtatCombat {
   journal: EvtCombat[];
   /** Nombre de rounds avant match nul forcé. */
   limiteRounds: number;
+  /** Compteurs par camp, alimentés au fil du combat. */
+  stats: [StatsCote, StatsCote];
 }
 
 export type BattleAction =
@@ -356,6 +370,7 @@ export interface UnitePublique {
   ko: boolean;
   itemId: string | null;
   passifId: string;
+  talents: string[];
   /** Renseigné uniquement pour l'équipe du destinataire. */
   sorts?: SortPret[];
   recharges?: number[];

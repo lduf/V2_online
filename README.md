@@ -42,13 +42,30 @@ pas. S'ajoutent les **natures** (+10 % sur une stat, −10 % sur une autre) et
 les niveaux (1 à 50).
 
 On peut retirer tous les gènes d'un personnage contre des crédits, ou en
-perfectionner un seul contre des éclats.
+perfectionner un seul contre de l'essence.
+
+### Les talents
+
+Aux **niveaux 25 et 50**, chaque personnage ouvre un choix entre deux talents.
+Ils dépendent du rôle — un tank arbitre entre renvoyer les dégâts et entrer
+avec un bouclier, un mage entre le critique et un plancher sur son dé — et les
+deux options d'un palier tirent dans des directions opposées. Vingt-quatre
+talents en tout, calibrés par simulation : aucune paire ne dépasse 63 / 37.
+
+### L'essence
+
+Un doublon dont on ne fera rien se **dissout en essence**. L'essence perfectionne
+un gène, change un talent déjà choisi, et alimente la **Forge** : le sort qu'on
+désigne, sans passer par le hasard. Ses gènes sortent avec un plancher de 14/31
+— corrects, jamais parfaits, pour qu'un exemplaire forgé ne remplace pas un coup
+de chance en booster.
 
 ### La boucle
 
 Combattre → gagner des **crédits**, des **éclats** et de l'**XP** → acheter des
 personnages, des sorts et des objets à la boutique du jour ou les invoquer →
-affiner son équipe dans l'Atelier → remonter le classement de la saison.
+dissoudre les doublons en **essence** → affiner son équipe dans l'Atelier →
+remonter le classement de la saison.
 
 La défaite rapporte aussi : environ 40 % des gains. Une partie n'est jamais
 perdue pour rien.

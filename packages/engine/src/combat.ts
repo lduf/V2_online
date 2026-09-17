@@ -1,4 +1,5 @@
 import { ITEMS_PAR_ID } from './data/items.js';
+import { effetsTalents, talentsActifs } from './talents.js';
 import { multiplicateurElement } from './data/elements.js';
 import { ESPECES_PAR_ID } from './data/especes.js';
 import { Rng } from './rng.js';
@@ -6,6 +7,7 @@ import { multiplicateurPalier } from './stats.js';
 import { estMauvais, INFO_STATUTS } from './statuts.js';
 import type {
   BattleAction,
+  CategorieSort,
   Cote,
   Efficacite,
   EquipeCombat,
@@ -13,6 +15,7 @@ import type {
   EvtCombat,
   SortPret,
   StatKey,
+  StatsCote,
   StatutId,
   UniteCombat,
   UnitePublique,
@@ -66,6 +69,10 @@ export function multiplicateurEscalade(round: number): number {
   return Math.min(3, 1 + 0.18 * (round - ROUND_ESCALADE + 1));
 }
 
+function statsVides(): StatsCote {
+  return { desParfaits: 0, meilleurCoup: 0, critiques: 0, superEfficaces: 0, changements: 0 };
+}
+
 export function autreCote(c: Cote): Cote {
   return c === 0 ? 1 : 0;
 }
@@ -92,6 +99,27 @@ function statEffective(u: UniteCombat, k: Exclude<StatKey, 'pv'>): number {
 
 function aStatut(u: UniteCombat, id: StatutId): boolean {
   return u.statuts.some((s) => s.id === id);
+}
+
+function talentsActifsDe(u: UniteCombat) {
+  return talentsActifs(u.talents);
+}
+
+/** Somme des pourcentages d'un talent d'un type donné porté par l'unité. */
+function talentPct(
+  u: UniteCombat,
+  k: 'DEGATS' | 'ENCAISSE' | 'SOIN',
+  categorie?: CategorieSort,
+  quand?: string,
+): number {
+  let total = 0;
+  for (const e of effetsTalents(u.talents, k)) {
+    const eAny = e as { pct: number; categorie?: CategorieSort; quand?: string };
+    if (eAny.categorie && eAny.categorie !== categorie) continue;
+    if ((eAny.quand ?? 'TOUJOURS') !== (quand ?? 'TOUJOURS')) continue;
+    total += eAny.pct;
+  }
+  return total;
 }
 
 function itemEffet(u: UniteCombat): string | undefined {
@@ -126,6 +154,7 @@ export function creerCombat(
     remplacement: null,
     journal: [],
     limiteRounds: opts.limiteRounds ?? LIMITE_ROUNDS,
+    stats: [statsVides(), statsVides()],
   };
   const evts: EvtCombat[] = [
     {
@@ -161,6 +190,23 @@ function nouveauRound(etat: EtatCombat, evts: EvtCombat[]): void {
 function entreeEnJeu(etat: EtatCombat, cote: Cote, evts: EvtCombat[]): void {
   const u = actif(etat, cote);
   u.flags.tours = 0;
+
+  for (const t of talentsActifsDe(u)) {
+    for (const e of t.effets) {
+      if (e.k === 'ENTREE_PURGE') {
+        const avant = u.statuts.length;
+        u.statuts = u.statuts.filter((st) => !estMauvais(st.id));
+        if (avant !== u.statuts.length) {
+          evts.push({ t: 'PASSIF', cote, uniteUid: u.uid, nom: t.nom });
+        }
+      } else if (e.k === 'ENTREE_BOUCLIER') {
+        u.bouclier += Math.round(u.pvMax * e.ratio);
+        evts.push({ t: 'BOUCLIER', cote, uniteUid: u.uid, valeur: u.bouclier });
+        evts.push({ t: 'PASSIF', cote, uniteUid: u.uid, nom: t.nom });
+      }
+    }
+  }
+
   if (u.passifId === 'aube') {
     const avant = u.statuts.length;
     u.statuts = u.statuts.filter((s) => !estMauvais(s.id));
@@ -227,6 +273,7 @@ function debutDeTour(etat: EtatCombat, cote: Cote, evts: EvtCombat[]): void {
   let gain = ENERGIE_PAR_TOUR;
   if (u.passifId === 'surcharge') gain += 14;
   if (itemEffet(u) === 'BATTERIE') gain += 10;
+  for (const e of effetsTalents(u.talents, 'ENERGIE')) gain += e.parTour;
   donnerEnergie(etat, cote, u, gain, evts);
 
   if (u.passifId === 'amende') {
@@ -400,6 +447,7 @@ function effectuerSwitch(
   ancien.paliers = { atq: 0, def: 0, mag: 0, res: 0, vit: 0, chance: 0 };
   ancien.flags.garde = 0;
   ancien.flags.tourDemarre = 0;
+  if (!force) etat.stats[cote].changements += 1;
   evts.push({ t: 'SWITCH', cote, deUid: ancien.uid, versUid: nouveau.uid });
   evts.push({
     t: 'MESSAGE',
@@ -449,6 +497,7 @@ function lancerSort(
   if (lanceur.passifId === 'theoreme' && sort.def.de >= 15) precision += 12;
   if (itemEffet(lanceur) === 'FOCUS') precision += 8;
   if (aStatut(lanceur, 'CONCENTRATION')) precision += 15;
+  for (const e of effetsTalents(lanceur.talents, 'PRECISION')) precision += e.pts;
 
   const cibleAdverse = sort.def.cible === 'ENNEMI';
   if (cibleAdverse) {
@@ -477,13 +526,22 @@ function lancerSort(
       evts.push({ t: 'PASSIF', cote, uniteUid: lanceur.uid, nom: 'Dé Pipé' });
     }
   }
+  // Un talent peut relever le plancher du dé : la loterie reste, mais on ne
+  // tombe plus de très haut.
+  let plancher = 0;
+  for (const e of effetsTalents(lanceur.talents, 'DE_PLANCHER')) {
+    plancher = Math.max(plancher, e.ratio);
+  }
+  if (plancher > 0 && faces > 1) {
+    const mini = Math.ceil(faces * plancher);
+    if (jet < mini) jet = mini;
+  }
   const ratio = jet / faces;
   const coeff = faces === 1 ? 1 : 0.55 + 0.45 * ratio;
   const parfait = faces > 1 && jet === faces;
+  // Le dé parfait se voit sur le dé lui-même : pas de message en doublon.
   evts.push({ t: 'DE', faces, resultat: jet, coeff: Math.round(coeff * 100) / 100, parfait });
-  if (parfait) {
-    evts.push({ t: 'MESSAGE', texte: 'DÉ PARFAIT !', ton: 'epique' });
-  }
+  if (parfait) etat.stats[cote].desParfaits += 1;
 
   etat.rng = rng.state;
 
@@ -566,6 +624,7 @@ function resoudreDegats(
   // Critique.
   let chanceCrit = 5 + statEffective(att, 'chance') / 12 + sort.critique;
   if (att.passifId === 'coup_de_sang' && att.pv / att.pvMax < 0.5) chanceCrit += 25;
+  for (const e of effetsTalents(att.talents, 'CRIT')) chanceCrit += e.pts;
   const critique = parfait || rng.chance(Math.min(CRIT_MAX, chanceCrit));
   if (critique) degats *= MULT_CRITIQUE;
 
@@ -580,6 +639,19 @@ function resoudreDegats(
   if (att.passifId === 'coup_de_sang' && att.pv / att.pvMax < 0.5) degats *= 1.15;
   if (att.passifId === 'brasier' && aStatut(def, 'BRULURE')) degats *= 1.28;
 
+  // Talents offensifs.
+  let bonusTalent = talentPct(att, 'DEGATS', sort.def.categorie);
+  if (att.pv / att.pvMax < 0.5) bonusTalent += talentPct(att, 'DEGATS', sort.def.categorie, 'PV_BAS');
+  if (att.pv / att.pvMax > 0.7) bonusTalent += talentPct(att, 'DEGATS', sort.def.categorie, 'PV_HAUT');
+  if ((att.flags.tours ?? 0) === 0) {
+    bonusTalent += talentPct(att, 'DEGATS', sort.def.categorie, 'PREMIER_TOUR');
+  }
+  if (efficacite === 'SUPER') bonusTalent += talentPct(att, 'DEGATS', sort.def.categorie, 'SUPER');
+  if (def.pv / def.pvMax < 0.5) {
+    bonusTalent += talentPct(att, 'DEGATS', sort.def.categorie, 'CIBLE_ENTAMEE');
+  }
+  if (bonusTalent) degats *= 1 + bonusTalent / 100;
+
   // Objets.
   const effet = itemEffet(att);
   if (effet === 'CHARGE') degats *= 1 + Math.min(0.42, 0.05 * (etat.round - 1));
@@ -592,6 +664,8 @@ function resoudreDegats(
 
   // Défenses.
   if (def.passifId === 'mur_porteur' && sort.def.categorie === 'PHYSIQUE') degats *= 0.82;
+  const reduction = talentPct(def, 'ENCAISSE', sort.def.categorie);
+  if (reduction) degats *= Math.max(0.4, 1 - reduction / 100);
   if (def.flags.garde === 1) degats *= 0.6;
 
   // Exécution.
@@ -614,6 +688,11 @@ function resoudreDegats(
   const final = Math.max(1, Math.round(degats));
   const inflige = infligerBrut(etat, coteAdv, def, final, evts, efficacite, critique);
 
+  const st = etat.stats[cote];
+  if (inflige > st.meilleurCoup) st.meilleurCoup = inflige;
+  if (critique) st.critiques += 1;
+  if (efficacite === 'SUPER') st.superEfficaces += 1;
+
   // Effets après dégâts.
   if (att.passifId === 'brasier' && critique && !def.ko) {
     ajouterStatut(etat, coteAdv, def, 'BRULURE', 3, evts);
@@ -623,6 +702,14 @@ function resoudreDegats(
   }
   if (effet === 'VAMPIRIQUE') {
     soigner(etat, cote, att, Math.round(inflige * 0.12), evts);
+  }
+  for (const e of effetsTalents(att.talents, 'VAMPIRE')) {
+    soigner(etat, cote, att, Math.round(inflige * e.ratio), evts);
+  }
+  for (const e of effetsTalents(def.talents, 'EPINES')) {
+    if (e.categorie && e.categorie !== sort.def.categorie) continue;
+    if (att.ko) break;
+    infligerBrut(etat, cote, att, Math.round(inflige * e.ratio), evts, 'NEUTRE', false);
   }
   if (itemEffet(def) === 'EPINES' && sort.def.categorie === 'PHYSIQUE' && !att.ko) {
     infligerBrut(etat, cote, att, Math.round(inflige * 0.15), evts, 'NEUTRE', false);
@@ -651,7 +738,8 @@ function infligerBrut(
   let pvPerdus = Math.min(u.pv, restant);
   u.pv -= pvPerdus;
 
-  if (u.pv <= 0 && itemEffet(u) === 'SURVIE' && !u.flags.survieUtilisee) {
+  const survieTalent = effetsTalents(u.talents, 'SURVIE').length > 0;
+  if (u.pv <= 0 && (itemEffet(u) === 'SURVIE' || survieTalent) && !u.flags.survieUtilisee) {
     u.flags.survieUtilisee = 1;
     u.pv = 1;
     evts.push({ t: 'MESSAGE', texte: `${u.nom} survit de justesse !`, ton: 'epique' });
@@ -703,6 +791,8 @@ function soigner(
   if (u.ko || montant <= 0) return 0;
   let m = montant;
   if (u.passifId === 'second_souffle') m *= 1.25;
+  const bonusSoin = talentPct(u, 'SOIN');
+  if (bonusSoin) m *= 1 + bonusSoin / 100;
   // Pendant l'escalade, les soins ne suivent pas : impossible de temporiser.
   if (etat.round >= ROUND_ESCALADE) m *= Math.max(0.3, 1 - 0.1 * (etat.round - ROUND_ESCALADE + 1));
   if (aStatut(u, 'MALEDICTION')) m *= 0.5;
@@ -806,7 +896,11 @@ function appliquerEffets(
     switch (effet.type) {
       case 'STATUT': {
         const { u, cote: c } = resoudre(effet.cible);
-        if (!u.ko && rng.chance(effet.chance)) ajouterStatut(etat, c, u, effet.statut, effet.duree, evts);
+        let chance = effet.chance;
+        for (const e of effetsTalents(lanceur.talents, 'STATUT')) chance += e.pts;
+        if (!u.ko && rng.chance(Math.min(100, chance))) {
+          ajouterStatut(etat, c, u, effet.statut, effet.duree, evts);
+        }
         break;
       }
       case 'BUFF': {
@@ -1001,6 +1095,7 @@ function vueUnite(u: UniteCombat, complet: boolean): UnitePublique {
     ko: u.ko,
     itemId: u.itemId,
     passifId: u.passifId,
+    talents: u.talents,
   };
   if (complet) {
     base.sorts = u.sorts;
