@@ -3352,3 +3352,62 @@ s {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Vitrine des personnages d'une bannière d'invocation */
+
+.invocation__titre-vitrine {
+  margin-top: 1.6rem;
+  margin-bottom: 0.7rem;
+}
+
+.vitrine {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 0.5rem;
+}
+
+.vitrine__perso {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 0.15rem;
+  padding: 0.6rem 0.4rem;
+  border-radius: var(--rayon-s);
+  border: 1px solid var(--panneau-bord);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.04), rgba(0, 0, 0, 0.28));
+  overflow: hidden;
+  filter: grayscale(0.7) opacity(0.6);
+  transition: var(--transition);
+}
+
+.vitrine__perso::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(110px 80px at 50% 0%, var(--el), transparent 72%);
+  opacity: 0.18;
+  pointer-events: none;
+}
+
+.vitrine__perso.est-possede {
+  filter: none;
+  border-color: var(--el);
+}
+
+.vitrine__perso:hover {
+  filter: none;
+  transform: translateY(-2px);
+}
+
+.vitrine__perso strong {
+  font-size: 0.8rem;
+}
+
+.vitrine__coche {
+  position: absolute;
+  top: 5px;
+  right: 7px;
+  color: var(--vert);
+  font-size: 0.75rem;
+  font-weight: 800;
+}
