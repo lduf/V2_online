@@ -167,7 +167,6 @@ async function lot(especes, style, c, format, profil = PROFILS.carre) {
   const dossier = path.join(SORTIE, style.id);
   fs.mkdirSync(dossier, { recursive: true });
   let faits = 0, sautes = 0, octetsTotal = 0;
-  const suspectes = [];
   for (const e of especes) {
     const existant = EXTENSIONS
       .map((x) => path.join(dossier, `${e.id}.${x}`))
@@ -178,14 +177,16 @@ async function lot(especes, style, c, format, profil = PROFILS.carre) {
     try {
       const { octets: brut, ext } = await generer(c, prompt, format, TAILLE ?? profil.taille);
       if (ext === 'bin') throw new Error('Format d’image non reconnu dans la réponse');
-      const { octets, source, bande } = await optimiser(brut, profil);
+      const { octets, source, mesures } = await optimiser(brut, profil);
       fs.writeFileSync(path.join(dossier, `${e.id}.webp`), octets);
       console.log(
         `${source.format} ${source.largeur}×${source.hauteur} ${Math.round(source.octets / 1024)} ko` +
           ` → webp ${profil.largeur}×${profil.hauteur} ${Math.round(octets.length / 1024)} ko` +
-          (bande?.suspecte ? `  ⚠ bandes (×${bande.rapport.toFixed(1)})` : ''),
+          // Deux indices, sans verdict : un anneau bas signale peut-être une
+          // marge peinte, une rupture haute peut-être un letterbox. Ni l'un ni
+          // l'autre ne tranche — voir le commentaire de `mesurer`.
+          (mesures ? `  [rupture ×${mesures.rupture.toFixed(1)} · anneau ${mesures.anneau.toFixed(0)}]` : ''),
       );
-      if (bande?.suspecte) suspectes.push(e.id);
       faits++;
       octetsTotal += octets.length;
     } catch (err) {
@@ -200,17 +201,6 @@ async function lot(especes, style, c, format, profil = PROFILS.carre) {
   }
   const poids = faits ? ` · ${Math.round(octetsTotal / 1024)} ko produits` : '';
   console.log(`${style.id} : ${faits} générées, ${sautes} déjà présentes${poids}`);
-  if (suspectes.length) {
-    // Le fichier est écrit : c'est un humain qui décide de le jeter. On donne
-    // la commande, parce que chercher soi-même quoi supprimer fait relancer
-    // le lot entier — et chaque image se paie.
-    console.log(
-      `  ⚠ ${suspectes.length} image(s) probablement letterboxée(s) : ${suspectes.join(', ')}`,
-    );
-    console.log(
-      `    rm ${suspectes.map((id) => path.join(dossier, `${id}.webp`)).join(' ')}  puis relancer`,
-    );
-  }
 }
 
 const args = process.argv.slice(2);
@@ -247,4 +237,10 @@ try {
   // sur le disque : le client ne doit jamais demander une image absente.
   const n = ecrireManifeste();
   console.log(`\nManifeste : ${n} illustration(s) recensée(s).`);
+  if (args.includes('--pleine')) {
+    // Les deux mesures ci-dessus n'ont pas de seuil fiable : ce qui tranche
+    // sur les ratés du full art — marge peinte, scène en paysage — c'est de
+    // voir le lot d'un coup.
+    console.log('Planche-contact pour vérifier : node outils/art/planche.mjs --pleines');
+  }
 }

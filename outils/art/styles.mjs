@@ -94,12 +94,16 @@ export const STYLES = Object.fromEntries(
  * médium plat revenait donc à interdire par construction ce qu'on lui
  * demande.
  *
- * Les bibles de prestige ci-dessous partent donc de l'autre bout : peinture
- * numérique rendue, lumière dramatique, matières qui accrochent la lumière,
- * profondeur de champ. Elles ne ressemblent pas aux vignettes, et c'est la
- * convention du genre — la carte « alternate art » d'un jeu de cartes n'est
- * jamais la version agrandie de la carte normale. Ce qui raccroche les deux,
- * c'est le cadre de rareté et la palette du personnage, pas le médium.
+ * Premier essai : partir de l'autre bout, en peinture numérique pleinement
+ * rendue. Impressionnant, et immédiatement reconnaissable comme une image
+ * générée — voir SANS_TICS_IA plus bas, qui liste pourquoi.
+ *
+ * Les bibles ci-dessous cherchent l'entre-deux : garder du plat rendu la
+ * technique visible et la palette limitée, prendre du rendu le décor, la
+ * lumière et la profondeur. Elles ne ressemblent pas aux vignettes, et c'est
+ * la convention du genre — la carte « alternate art » d'un jeu de cartes
+ * n'est jamais la version agrandie de la carte normale. Ce qui raccroche les
+ * deux, c'est le cadre de rareté et la palette du personnage, pas le médium.
  *
  * Le comique, lui, ne bouge pas : c'est l'écart entre le traitement épique et
  * le sujet — un étudiant, un kebab, une laverie, un amphi — qui fait la
@@ -131,42 +135,89 @@ const FORMAT_PLEIN =
   'IMAGE VERTICALE AU FORMAT PORTRAIT 3:4, nettement plus haute que large.';
 
 /**
- * Le socle de rendu commun aux trois bibles de prestige.
+ * Ce qui fait qu'une image « sent l'IA », et comment l'éviter.
  *
- * C'est exactement ce que les bibles plates interdisent. On le dit une fois
- * ici plutôt que trois fois plus bas, pour que « monter le niveau de rendu »
- * reste une modification d'une seule ligne.
+ * Premier essai : peinture numérique rendue, éclairage cinématographique à
+ * trois sources, contre-jour qui détoure, particules en suspension, bokeh.
+ * Résultat impressionnant et immédiatement reconnaissable comme une image
+ * générée — parce que c'est précisément la liste des tics de l'illustration
+ * générée. Ce n'est pas un défaut d'exécution, c'est le brief qui les
+ * demandait un par un.
+ *
+ * Le dénominateur commun de ces tics : l'absence de main. Aucun outil n'est
+ * identifiable, aucune trace de geste, aucune décision de retrait. Tout est
+ * rendu au même niveau de détail, tout brille, rien n'est laissé de côté.
+ *
+ * D'où la consigne ci-dessous, qui est un socle NÉGATIF. Elle vaut pour les
+ * trois directions, parce que c'est elle — plus que le choix de médium — qui
+ * décide si l'image a l'air faite par quelqu'un.
  */
-const RENDU_PRESTIGE =
-  'Peinture numérique richement rendue, qualité illustration de couverture, ' +
-  'modelé complet des volumes, dégradés doux, lumière spéculaire marquée, ' +
-  'reflets nets sur les matières qui accrochent — métal, verre, vernis, cuir, ' +
-  'tissu satiné, surfaces mouillées. Éclairage cinématographique à trois ' +
-  'sources : une clé forte, un contre-jour qui détoure le personnage d’un ' +
-  'liseré lumineux, un rebond coloré. Profondeur de champ, arrière-plan ' +
-  'légèrement flou, particules de lumière en suspension. Micro-détail sur les ' +
-  'matières, aucune texture photographique ni collage de photo.';
+const SANS_TICS_IA =
+  'Interdits formels : aucun rendu lissé à l’aérographe, aucune peau ' +
+  'plastique ou cireuse, aucun contre-jour qui détoure tout le personnage ' +
+  'd’un liseré lumineux, aucune particule ni étincelle ni braise orange en ' +
+  'suspension, aucune poussière lumineuse, aucun bokeh, aucun flou ' +
+  'd’arrière-plan généralisé, aucun halo ni bloom autour des sources, aucune ' +
+  'palette turquoise-et-orange, aucune symétrie centrale, aucune pose ' +
+  'héroïque plantée face au spectateur, aucun niveau de détail uniforme sur ' +
+  'toute l’image.';
+
+/**
+ * L'entre-deux : une technique qu'on peut nommer.
+ *
+ * Ce qui manquait aux bibles plates, ce n'était pas du rendu, c'était de la
+ * richesse — un décor, une lumière, une profondeur. Ce qui plombait les
+ * bibles rendues, ce n'était pas la richesse, c'était le rendu lisse. On
+ * garde donc le bord à bord, le décor et le mouvement, et on revient à un
+ * médium identifiable : quelque chose qui a un outil, un support et une
+ * palette limitée.
+ *
+ * Les reflets restent, mais ils changent de nature. Ils ne sont plus des
+ * dégradés posés sur le personnage : ce sont des formes, dans le monde — une
+ * flaque, une vitre, un écran — traitées à plat comme le reste. C'est ainsi
+ * que les affiches peintes font les reflets depuis toujours.
+ */
+const RENDU_ENTRE_DEUX =
+  'Illustration faite à la main, technique visible et assumée : on voit ' +
+  'l’outil, le support et la matière. Palette volontairement limitée, six ' +
+  'couleurs au maximum, choisies et non échantillonnées. Hiérarchie de ' +
+  'détail franche : le visage et les mains sont travaillés, tout le reste est ' +
+  'simplifié en formes. Les reflets et les lumières sont des FORMES nettes ' +
+  'posées à plat — une flaque, une vitre, un écran, un chrome — jamais des ' +
+  'dégradés lissés sur la peau ou le tissu. Grain du support visible dans la ' +
+  // « Grain du support visible » suffisait à faire dessiner la feuille :
+  // bord déchiré, marge, punaise, ombre portée. On garde la matière, on
+  // interdit l'objet.
+  'matière même de l’image, comme vu de très près — on ne voit JAMAIS la ' +
+  'feuille en tant qu’objet : ni bord, ni coin, ni déchirure, ni punaise, ni ' +
+  'ombre portée, ni marge, ni cadre. L’image est cadrée à l’intérieur du ' +
+  'support et le déborde de tous les côtés.';
 
 /**
  * L'exubérance : elle se joue dans la mise en scène, pas dans le rendu.
  *
  * Une belle lumière sur quelqu'un debout les bras ballants reste une photo
- * d'identité bien éclairée. Ce qui rend une carte de prestige impressionnante,
- * c'est le mouvement — le tissu qui claque, la contre-plongée, le geste tenu
- * une fraction de seconde avant la chute.
+ * d'identité bien éclairée. Mais la première version a confondu « exubérant »
+ * et « héroïque » : contre-plongée monumentale, lignes de fuite convergentes,
+ * personnage planté au centre. C'est la pose de couverture de jeu vidéo, et
+ * c'est l'un des tics ci-dessus. On garde le mouvement et on retire la
+ * statue.
  */
 const MISE_EN_SCENE_PLEINE =
-  'Mise en scène spectaculaire et théâtrale : pose ample et assumée, geste ' +
-  'large saisi en plein mouvement, vêtement et cheveux emportés par le ' +
-  'déplacement. Légère contre-plongée, qui rend le personnage monumental. ' +
-  'Composition en diagonale, lignes de fuite qui convergent vers le visage. ' +
-  'Un accessoire du quotidien étudiant brandi comme une arme légendaire, ' +
-  'traité avec le plus grand sérieux.';
+  'Mise en scène vive et théâtrale, mais jamais solennelle : geste large ' +
+  'saisi en plein mouvement, à contretemps, une fraction de seconde avant ou ' +
+  'après le moment attendu. Vêtement et cheveux emportés par le déplacement. ' +
+  'Composition franchement décentrée et asymétrique, cadrage qui coupe, ' +
+  'grande zone vide d’un côté. Point de vue à hauteur d’œil ou en légère ' +
+  'plongée, jamais en contre-plongée héroïque. Un accessoire du quotidien ' +
+  'étudiant brandi comme une arme légendaire, traité avec le plus grand ' +
+  'sérieux — c’est là qu’est la blague, et elle ne marche que si le reste ne ' +
+  'se moque pas.';
 
 const CADRAGE_PLEIN =
   'Composition pleine page bord à bord, le décor va jusqu’aux quatre bords. ' +
-  'Personnage en pied ou aux trois quarts, légèrement décentré, occupant le ' +
-  'tiers central de la hauteur, regard planté dans celui du spectateur. ' +
+  'Personnage en pied ou aux trois quarts, occupant la moitié de la hauteur ' +
+  'de l’image, décalé sur un côté, regard planté dans celui du spectateur. ' +
   // Deux images sur six sortaient en paysage collé au centre d'un canevas
   // vertical, avec des bandes au-dessus et au-dessous. Le format du fichier
   // était pourtant bon : c'est la composition qui était en 16:9.
@@ -174,56 +225,72 @@ const CADRAGE_PLEIN =
   'aucune bande noire, aucun letterboxing, aucune marge, aucun bord vide, ' +
   'aucune scène en paysage insérée dans un cadre plus haut.';
 
+/**
+ * Le décor doit être OBSERVÉ, pas évoqué.
+ *
+ * « Décor de vie étudiante française » donnait une rue générique avec des
+ * enseignes en anglais. Le générique est l'autre signature de l'image
+ * générée : elle produit la moyenne de tout ce qu'elle a vu. Nommer des
+ * objets précis est ce qui la sort de la moyenne — et c'est aussi ce qui
+ * fait l'humour, qui tient au détail juste et pas à la grimace.
+ */
 const FOND_PLEIN =
-  'Décor de vie étudiante française immédiatement reconnaissable, mais traité ' +
-  'en arrière-plan : formes simplifiées, valeurs sourdes, flou de profondeur, ' +
-  'pour ne jamais manger le personnage. Aucune bordure, aucun cadre peint, ' +
-  'aucun liseré, aucun texte.';
+  'Décor de vie étudiante française observé et précis, pas générique : néon ' +
+  'de grec ouvert la nuit, plateau de resto U, machine à café de couloir, ' +
+  'gradins d’amphi, photocopieuse, rayonnage de BU, laverie automatique, ' +
+  'abribus, cage d’escalier de cité universitaire, table pliante de soirée. ' +
+  'Traité en formes simplifiées et valeurs sourdes, pour ne jamais manger le ' +
+  'personnage. Aucune bordure, aucun cadre peint, aucun liseré. Aucun texte, ' +
+  'aucune lettre, aucune enseigne lisible — surtout pas en anglais.';
 
 const MARGES_PLEIN =
   'Le tiers supérieur et le tiers inférieur de l’image restent calmes et peu ' +
-  'contrastés — halo, brume, sol sombre, dégradé d’ambiance — pour laisser de ' +
-  'la place à du texte en surimpression. Rien d’important ne s’y trouve, et ' +
-  'surtout pas le visage ni les mains.';
+  'contrastés — un mur, un plafond, un sol, un aplat d’ambiance — pour ' +
+  'laisser de la place à du texte en surimpression. Rien d’important ne s’y ' +
+  'trouve, et surtout pas le visage ni les mains.';
 
 /**
- * Trois directions de prestige, à départager.
+ * Trois entre-deux, à départager.
  *
- * Elles ne varient pas par le médium — il est commun — mais par la LUMIÈRE et
- * le décor, qui est ce qui se voit d'abord sur une carte de 268 px. Chacune
- * prend un moment de la vie étudiante et le traite comme une scène d'épopée.
+ * Chacune nomme une technique réelle, avec son support, ses contraintes et
+ * ses accidents. C'est la contrainte qui produit le style : une risographie
+ * n'a que trois encres, une affiche peinte a des coups de pinceau, une
+ * couleur directe déborde du trait. Une image qui n'a aucune contrainte
+ * ressemble à toutes les autres.
  */
 const PRESTIGES = {
-  neon: {
-    nom: 'Néon et bitume',
+  riso: {
+    nom: 'Risographie de fanzine',
     lumiere:
-      'Scène de nuit après la soirée. Lumière de néons saturés — rose, cyan, ' +
-      'orange kebab — en sources multiples. Pluie fine, bitume trempé qui ' +
-      'renvoie les enseignes en reflets étirés, flaques miroir, halos humides ' +
-      'autour des lampadaires, buée. Noirs profonds, couleurs électriques, ' +
-      'fort contraste. Décor : rue de centre-ville, grec ouvert la nuit, ' +
-      'arrêt de tram, devanture de laverie.',
+      'Sérigraphie risographe à trois encres seulement : rose fluorescent, ' +
+      'bleu outremer, noir. Les autres teintes naissent de la surimpression ' +
+      'des trois. Trame de points grossière et bien visible, repérage décalé ' +
+      'd’un ou deux millimètres, encre inégale, papier recyclé légèrement ' +
+      'jauni, blancs qui sont le papier nu. La lumière est un aplat de rose ' +
+      'fluo, les reflets au sol sont des formes franches de fluo. Énergie ' +
+      'd’affiche de soirée étudiante, sans en montrer la feuille.',
   },
-  vitrail: {
-    nom: 'Amphi cathédrale',
+  affiche: {
+    nom: 'Affiche peinte 1979',
     lumiere:
-      'Lumière volumétrique de fin d’après-midi traversant de hautes verrières, ' +
-      'rayons obliques matérialisés dans la poussière en suspension, halo doré ' +
-      'derrière la tête. Palette chaude et solennelle, ors, ocres, bordeaux, ' +
-      'ombres profondes et transparentes. Traitement de retable. Décor : ' +
-      'amphithéâtre monumental, bibliothèque universitaire, grand escalier ' +
-      'de faculté, gradins vides.',
+      'Affiche de cinéma français de la fin des années 1970, peinte à la ' +
+      'gouache et à l’acrylique : coups de pinceau visibles, empâtements, ' +
+      'arêtes franches entre les valeurs, couleurs légèrement passées, ocres ' +
+      'et rouges profonds, noir chaud. Lumière d’un seul projecteur dur qui ' +
+      'découpe des ombres nettes en aplat. Les reflets sont des touches ' +
+      'blanches posées d’un geste. Grain de papier d’affiche et léger décalage ' +
+      'de trame offset, dans l’image même et non sur ses bords.',
   },
-  orage: {
-    nom: 'Orage de partiels',
+  directe: {
+    nom: 'Encre et couleur directe',
     lumiere:
-      'Éclairage violent et instable de veille d’examen : contre-jour éclatant ' +
-      'qui détoure le personnage d’un liseré blanc, éclair froid sur un côté, ' +
-      'lumière chaude de lampe de bureau sur l’autre. Vent, papiers et feuilles ' +
-      'de cours arrachés qui tourbillonnent, étincelles, énergie visible. ' +
-      'Contraste extrême, palette froide percée d’un accent chaud. Décor : ' +
-      'salle d’examen, couloir de résidence universitaire, toit de bâtiment, ' +
-      'ciel de tempête.',
+      'Bande dessinée européenne contemporaine en couleur directe : trait ' +
+      'd’encre nerveux et inégal, couleur posée à la gouache en taches ' +
+      'franches qui débordent légèrement du trait, larges réserves de blanc ' +
+      'de papier gardées telles quelles. La lumière est un aplat de couleur ' +
+      'chaude, l’ombre un aplat froid, sans transition. Décor elliptique : ' +
+      'quelques éléments précis et beaucoup de vide. Lumière de tube néon de ' +
+      'couloir, blafarde et franche.',
   },
 };
 
@@ -239,17 +306,18 @@ export const STYLES_PLEINS = Object.fromEntries(
     {
       id: `pleine-${id}`,
       nom: `${p.nom} — full art`,
-      medium: RENDU_PRESTIGE,
+      medium: RENDU_ENTRE_DEUX,
       entete: FORMAT_PLEIN,
       /** Les poses de prestige remplacent les postures sobres du jeu de base. */
       prestige: true,
       base: [
-        RENDU_PRESTIGE,
+        RENDU_ENTRE_DEUX,
         p.lumiere,
         MISE_EN_SCENE_PLEINE,
         CADRAGE_PLEIN,
         FOND_PLEIN,
         MARGES_PLEIN,
+        SANS_TICS_IA,
       ].join(' '),
     },
   ]),
@@ -303,25 +371,35 @@ export function promptPersonnage(espece, style) {
 
   // En full art la carte entière est l'image : la silhouette a la place de
   // raconter quelque chose, donc elle raconte quelque chose.
+  //
+  // Première version : bras en croix, suspension, contre-plongée. C'était la
+  // pose de couverture de jeu vidéo — grande, mais générique et symétrique,
+  // donc exactement ce qu'on cherche à éviter. Ces poses-ci restent amples,
+  // mais elles sont de travers, prises à contretemps, et empruntées à des
+  // gestes de vie étudiante qu'on peut reconnaître.
   const rolesPrestige = {
     MAGE:
-      'bras levés en plein incantation, mains ouvertes d’où jaillit une énergie ' +
-      'lumineuse, manches qui retombent, visage éclairé par en dessous',
+      'penché en avant par-dessus une table, une paume claquée à plat dessus, ' +
+      'l’autre bras tendu de côté doigt pointé, comme s’il lançait un sort ' +
+      'et réclamait le silence dans le même geste',
     BRUISER:
-      'élan de frappe saisi à mi-course, torse pivoté, poing en avant, souffle ' +
-      'de déplacement derrière lui, mâchoire serrée',
+      'de trois quarts dos, épaule enfoncée dans un battant de porte ' +
+      'coupe-feu qu’il vient d’ouvrir à la volée, tête tournée vers le ' +
+      'spectateur, élan encore visible',
     ASSASSIN:
-      'en suspension, une jambe repliée, retombant vers le spectateur depuis un ' +
-      'point haut, manteau déployé en corolle, regard perçant sous la capuche',
+      'accroupi en équilibre sur un muret ou un dossier de chaise, poids sur ' +
+      'l’avant, capuche basse, une main au sol, prêt à filer sur le côté',
     SOUTIEN:
-      'bras grands ouverts en croix, tête légèrement rejetée en arrière, dôme de ' +
-      'lumière protecteur qui se déploie autour de lui',
+      'penché vers le spectateur, un bras tendu vers lui paume ouverte pour ' +
+      'le relever, l’autre main accrochée à quelque chose hors champ pour ne ' +
+      'pas tomber',
     TANK:
-      'planté jambes écartées, épaule en avant, encaissant un choc qui fait ' +
-      'gicler la lumière et la poussière sur ses flancs, immobile',
+      'campé de profil, épaule et dos plaqués contre un battant qu’il retient ' +
+      'seul, pieds qui ripent, visage tourné vers le spectateur sans effort ' +
+      'apparent',
     FARCEUR:
-      'en plein éclat de rire, un pied en l’air, buste cambré, pirouette ' +
-      'insolente, doigt pointé vers le spectateur',
+      'en plein éclat de rire, franchement déséquilibré, rattrapé de justesse, ' +
+      'un bras qui part en arrière, l’autre qui désigne le spectateur',
   };
 
   return [

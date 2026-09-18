@@ -248,7 +248,7 @@ export function Vitrine() {
           }
           note={
             aDuFullArt
-              ? "L'illustration occupe la carte bord à bord, le texte passe en surimpression sur un voile dégradé. Le prestige a son propre médium — rendu, reflets, profondeur de champ — que les bibles plates interdisent : c'est un axe indépendant du choix ci-dessus, comme l'alternate art d'un jeu de cartes."
+              ? "L'illustration occupe la carte bord à bord, le texte passe en surimpression sur un voile dégradé. Le prestige a son propre médium, indépendant du choix ci-dessus : une technique qu'on peut nommer — trois encres, une affiche peinte, une couleur directe — plutôt qu'un rendu lisse. « neon » est le premier essai, gardé comme témoin de ce qu'on ne veut pas."
               : 'Aucune illustration full art sur le disque — les cartes ci-dessous montrent le repli.'
           }
         >
