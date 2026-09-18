@@ -121,9 +121,18 @@ un hébergement serverless gratuit.
 **Deux pilotes SQL interchangeables** derrière la même interface : SQLite en
 local, Postgres en déploiement. Le SQL est écrit une seule fois.
 
-**Aucun asset.** Les personnages sont des SVG générés depuis une fiche d'art
-(couleurs, silhouette, accessoire) et les bruitages sont synthétisés par la Web
-Audio API. Rien à télécharger, rien à héberger.
+**Presque aucun asset.** Les bruitages sont synthétisés par la Web Audio API,
+et chaque personnage possède un avatar SVG généré depuis sa fiche d'art
+(couleurs, silhouette, accessoire). Les cartes peuvent afficher à la place une
+illustration peinte, quand elle existe : `outils/art/generer.mjs` les produit
+hors ligne via un endpoint compatible OpenAI, les ramène en WebP 512² — la
+plus grande carte fait 268 px de large — et les recense dans un manifeste. Un
+personnage sans illustration retombe sur son avatar SVG, donc le jeu reste
+complet avec zéro image commitée et la direction artistique reste réversible.
+
+La génération lit `ARENE_IMAGE_URL`, `ARENE_IMAGE_KEY` et `ARENE_IMAGE_MODEL`.
+La production, elle, ne connaît ni clé ni latence : elle ne sert que le
+résultat.
 
 ---
 

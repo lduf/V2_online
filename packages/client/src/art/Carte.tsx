@@ -17,7 +17,7 @@ import {
   type Rarete,
   type SortPossede,
 } from '@arene/engine';
-import { Avatar } from './Avatar';
+import { Illustration } from './Illustration';
 import { Sigle } from './Sigle';
 
 export type DonneesCarte =
@@ -210,7 +210,7 @@ function construire(d: DonneesCarte): ContenuCarte {
       type: `${espece.role.charAt(0)}${espece.role.slice(1).toLowerCase()} · ${espece.titre}`,
       texte: `✦ ${espece.passif.nom} — ${espece.passif.texte}`,
       coin: d.perso ? `N.${d.perso.niveau}` : undefined,
-      art: <Avatar art={art} taille={112} pose="portrait" avecFond={false} />,
+      art: <Illustration especeId={espece.id} art={art} taille={112} chromatique={chromatique} />,
       stats: stats
         ? [
             { cle: 'PV', valeur: stats.pv, titre: 'Points de vie' },
