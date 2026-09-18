@@ -7,6 +7,7 @@
  *   node outils/art/generer.mjs --style gouache --test
  *   node outils/art/generer.mjs --style gouache --tout
  *   node outils/art/generer.mjs --styles           (compare les trois sur 6 sujets)
+ *   node outils/art/generer.mjs --pleine           (maquette full art, 5:7)
  *
  * Les images sont ramenées en WebP 512² avant écriture : la plus grande
  * carte fait 268 px de large, tout pixel au-delà de 512 est du poids pur.
@@ -19,9 +20,15 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { ESPECES, ESPECES_PAR_ID } from '../../packages/engine/dist/index.js';
-import { STYLES, SUJETS_TEST, promptPersonnage } from './styles.mjs';
+import {
+  STYLES,
+  STYLES_PLEINS,
+  SUJETS_TEST,
+  SUJETS_PLEINS,
+  promptPersonnage,
+} from './styles.mjs';
 import { ecrireManifeste } from './manifeste.mjs';
-import { optimiser, COTE } from './optimiser.mjs';
+import { optimiser, PROFILS } from './optimiser.mjs';
 
 const SORTIE = path.resolve('packages/client/public/cartes');
 const TAILLE = process.env.ARENE_IMAGE_TAILLE ?? '1024x1024';
@@ -111,13 +118,23 @@ async function generer({ url, cle, modele }, prompt, format) {
       derniereErreur = `${cible} → ${r.status} ${brut.slice(0, 400)}`;
       // 404 : mauvais chemin, on tente le suivant. Sinon l'erreur est réelle.
       if (r.status === 404) continue;
-      if (r.status === 401 || r.status === 403)
+      if (r.status === 401 || r.status === 403) {
+        // Un 403 ne veut pas dire « clé morte ». LiteLLM renvoie le même code
+        // quand la clé est valide mais n'ouvre pas CE modèle — et il liste
+        // alors les modèles qu'elle ouvre, ce qui suffit à corriger
+        // ARENE_IMAGE_MODEL. Confondre les deux coûte une heure de recherche
+        // du côté de la clé alors qu'il n'y a qu'un caractère à changer.
+        const autorises = brut.match(/models=\[([^\]]*)\]/)?.[1];
         throw new PanneFatale(
           derniereErreur,
-          "L'endpoint répond, donc ni le réseau ni le chemin ne sont en cause : " +
-            'c\'est ARENE_IMAGE_KEY qui est refusée par ce serveur (révoquée, ' +
-            'expirée, ou émise par une autre instance LiteLLM).',
+          autorises
+            ? `La clé est acceptée, mais elle n'ouvre pas « ${modele} ». ` +
+              `Modèles autorisés : ${autorises}. Corriger ARENE_IMAGE_MODEL.`
+            : "L'endpoint répond, donc ni le réseau ni le chemin ne sont en cause : " +
+              "c'est ARENE_IMAGE_KEY qui est refusée par ce serveur (révoquée, " +
+              'expirée, ou émise par une autre instance LiteLLM).',
         );
+      }
       if (r.status === 400 && /model/i.test(brut))
         throw new PanneFatale(derniereErreur, `Vérifier ARENE_IMAGE_MODEL (« ${modele} »).`);
       throw new Error(derniereErreur);
@@ -144,7 +161,7 @@ async function generer({ url, cle, modele }, prompt, format) {
   );
 }
 
-async function lot(especes, style, c, format) {
+async function lot(especes, style, c, format, profil = PROFILS.carre) {
   const dossier = path.join(SORTIE, style.id);
   fs.mkdirSync(dossier, { recursive: true });
   let faits = 0, sautes = 0, octetsTotal = 0;
@@ -158,11 +175,11 @@ async function lot(especes, style, c, format) {
     try {
       const { octets: brut, ext } = await generer(c, prompt, format);
       if (ext === 'bin') throw new Error('Format d’image non reconnu dans la réponse');
-      const { octets, source } = await optimiser(brut);
+      const { octets, source } = await optimiser(brut, profil);
       fs.writeFileSync(path.join(dossier, `${e.id}.webp`), octets);
       console.log(
         `${source.format} ${source.largeur}×${source.hauteur} ${Math.round(source.octets / 1024)} ko` +
-          ` → webp ${COTE}² ${Math.round(octets.length / 1024)} ko`,
+          ` → webp ${profil.largeur}×${profil.hauteur} ${Math.round(octets.length / 1024)} ko`,
       );
       faits++;
       octetsTotal += octets.length;
@@ -187,7 +204,13 @@ const c = conf();
 console.log(`modèle ${c.modele} · taille ${TAILLE} · sortie ${SORTIE}`);
 
 try {
-  if (args.includes('--styles')) {
+  if (args.includes('--pleine')) {
+    // Le full art est un traitement de prestige : on ne le valide que sur les
+    // deux raretés qui y auront droit, pas sur les vingt-huit.
+    const sujets = SUJETS_PLEINS.map((id) => ESPECES_PAR_ID[id]).filter(Boolean);
+    for (const style of Object.values(STYLES_PLEINS))
+      await lot(sujets, style, c, format, PROFILS.pleine);
+  } else if (args.includes('--styles')) {
     const sujets = SUJETS_TEST.map((id) => ESPECES_PAR_ID[id]).filter(Boolean);
     for (const style of Object.values(STYLES)) await lot(sujets, style, c, format);
   } else {

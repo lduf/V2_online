@@ -5329,3 +5329,185 @@ s {
   border-left: 2px solid var(--accent);
   padding-left: 0.6rem;
 }
+
+/* ==========================================================================
+   Le traitement « full art »
+   L'illustration EST la carte : elle passe sous tout le reste, bord à bord,
+   et le texte se pose dessus sur un voile dégradé. C'est le traitement de
+   prestige des jeux de cartes — réservé au haut des raretés, sinon le signal
+   ne veut plus rien dire.
+   ========================================================================== */
+
+.carte--pleine .carte__cadre {
+  padding: 0;
+  /* Le fond teinté par l'élément n'a plus rien à teinter : l'image le couvre
+     entièrement. On le garde quand même pour le repli SVG. */
+}
+
+/* Sortie du flux : les autres enfants restent en grille, et la rangée 1fr
+   laissée vide par le panneau d'art devient la respiration de l'illustration. */
+.carte--pleine .carte__art {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: 12px;
+  border: none;
+  background: none;
+}
+
+.carte--pleine .carte__illustration {
+  /* L'image est déjà au ratio de la carte : plus besoin de remonter le
+     cadrage pour sauver le visage comme sur la vignette carrée. */
+  object-position: 50% 50%;
+  border-radius: 12px;
+}
+
+.carte--pleine .carte__lueur {
+  display: none;
+}
+
+.carte--pleine .carte__entete,
+.carte--pleine .carte__ligne-type,
+.carte--pleine .carte__texte,
+.carte--pleine .carte__pied {
+  position: relative;
+  z-index: 2;
+  margin: 0 8px;
+}
+
+.carte--pleine .carte__entete {
+  margin-top: 7px;
+  padding: 0.18rem 0.4rem;
+  border-radius: 7px;
+  /* Le nom se pose sur un décor dont on ne connaît pas la valeur : sans ce
+     voile, une carte sur trois devient illisible. */
+  background: linear-gradient(180deg, rgba(8, 4, 16, 0.82), rgba(8, 4, 16, 0.45));
+  backdrop-filter: blur(2px);
+}
+
+.carte--pleine .carte__pied {
+  margin-bottom: 8px;
+}
+
+/* Le voile du bas couvre d'un seul tenant la ligne de type, le texte de
+   passif et les stats : trois fonds séparés feraient trois rectangles. */
+.carte--pleine .carte__ligne-type::before {
+  content: '';
+  position: absolute;
+  left: -8px;
+  right: -8px;
+  top: -6px;
+  bottom: -200px;
+  z-index: -1;
+  border-radius: 0 0 12px 12px;
+  background: linear-gradient(180deg, rgba(8, 4, 16, 0), rgba(8, 4, 16, 0.86) 28%, rgba(8, 4, 16, 0.95));
+  pointer-events: none;
+}
+
+.carte--pleine .carte__texte {
+  background: none;
+  padding: 0 0.36rem;
+}
+
+.carte--pleine .carte__sceau {
+  z-index: 5;
+}
+
+/* ==========================================================================
+   La vitrine du composant Carte (#vitrine)
+   Préfixe `demo-carte` : `vitrine` est déjà pris par la boutique du jour.
+   Page de démonstration hors jeu : tous les états de la carte côte à côte.
+   ========================================================================== */
+
+.demo-carte {
+  min-height: 100vh;
+  padding: 2rem 2.5rem 4rem;
+  background: #0b0716;
+  color: var(--texte, #efeaff);
+}
+
+.demo-carte__entete h1 {
+  margin: 0 0 0.4rem;
+  font-size: 1.6rem;
+}
+
+.demo-carte__entete p {
+  margin: 0 0 1rem;
+  max-width: 62ch;
+  color: var(--texte-doux, #b5abd8);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.demo-carte__styles {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.demo-carte__styles button {
+  padding: 0.35rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid #3a3159;
+  background: #171029;
+  color: #b5abd8;
+  font: inherit;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.demo-carte__styles button.est-actif {
+  background: var(--accent, #7d5cff);
+  border-color: var(--accent, #7d5cff);
+  color: #0b0716;
+  font-weight: 700;
+}
+
+.demo-carte__section {
+  margin-top: 2.4rem;
+  border-top: 1px solid #241b3d;
+  padding-top: 1.2rem;
+}
+
+.demo-carte__section h2 {
+  margin: 0 0 0.3rem;
+  font-size: 1.1rem;
+}
+
+.demo-carte__note {
+  margin: 0 0 1.2rem;
+  max-width: 78ch;
+  color: var(--texte-doux, #b5abd8);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.demo-carte__rangee {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.6rem;
+  align-items: flex-start;
+}
+
+.demo-carte__rangee figure {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.demo-carte__rangee figcaption {
+  font-size: 0.72rem;
+  color: var(--texte-faible, #8478ab);
+  max-width: 268px;
+}
+
+/* Une paire illustration / repli reste soudée même quand la rangée passe à
+   la ligne : c'est la comparaison qui compte, pas l'alignement. */
+.demo-carte__paire {
+  display: flex;
+  gap: 0.6rem;
+  padding: 0.6rem;
+  border: 1px dashed #2f2650;
+  border-radius: 12px;
+}

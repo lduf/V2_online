@@ -32,6 +32,12 @@ interface Props {
   taille?: TailleCarte;
   /** Active l'inclinaison 3D et le foil qui suit le pointeur. */
   vivante?: boolean;
+  /**
+   * Traitement « full art » : l'illustration occupe la carte bord à bord et le
+   * texte passe en surimpression. Réservé au prestige — une commune en full
+   * art dilue le signal que le traitement est censé porter.
+   */
+  pleine?: boolean;
   selectionnee?: boolean;
   estompee?: boolean;
   badge?: ReactNode;
@@ -50,6 +56,7 @@ export function Carte({
   donnees,
   taille = 'normal',
   vivante = true,
+  pleine = false,
   selectionnee,
   estompee,
   badge,
@@ -83,7 +90,7 @@ export function Carte({
     el.style.setProperty('--my', '50%');
   }, []);
 
-  const contenu = construire(donnees);
+  const contenu = construire(donnees, pleine);
   const el = contenu.element ? INFO_ELEMENTS[contenu.element] : null;
 
   return (
@@ -93,6 +100,7 @@ export function Carte({
         'carte',
         `carte--${taille}`,
         `rarete--${contenu.rarete.toLowerCase()}`,
+        pleine ? 'carte--pleine' : '',
         contenu.variante ? 'carte--variante' : '',
         contenu.sceau ? 'carte--sceau' : '',
         selectionnee ? 'est-selectionnee' : '',
@@ -196,7 +204,7 @@ interface ContenuCarte {
   sceau?: boolean;
 }
 
-function construire(d: DonneesCarte): ContenuCarte {
+function construire(d: DonneesCarte, pleine = false): ContenuCarte {
   if (d.kind === 'PERSO') {
     const espece = ESPECES_PAR_ID[d.especeId];
     const chromatique = d.chromatique ?? d.perso?.chromatique ?? false;
@@ -210,7 +218,16 @@ function construire(d: DonneesCarte): ContenuCarte {
       type: `${espece.role.charAt(0)}${espece.role.slice(1).toLowerCase()} · ${espece.titre}`,
       texte: `✦ ${espece.passif.nom} — ${espece.passif.texte}`,
       coin: d.perso ? `N.${d.perso.niveau}` : undefined,
-      art: <Illustration especeId={espece.id} art={art} taille={112} chromatique={chromatique} />,
+      art: (
+        <Illustration
+          especeId={espece.id}
+          art={art}
+          // En full art l'image couvre toute la carte : la plus grande fait
+          // 268 px de large pour 375 de haut, donc on annonce la hauteur.
+          taille={pleine ? 375 : 112}
+          chromatique={chromatique}
+        />
+      ),
       stats: stats
         ? [
             { cle: 'PV', valeur: stats.pv, titre: 'Points de vie' },
