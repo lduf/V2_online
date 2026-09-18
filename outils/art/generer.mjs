@@ -7,7 +7,9 @@
  *   node outils/art/generer.mjs --style gouache --test
  *   node outils/art/generer.mjs --style gouache --tout
  *   node outils/art/generer.mjs --styles           (compare les trois sur 6 sujets)
- *   node outils/art/generer.mjs --style gouache --tout --format webp
+ *
+ * Les images sont ramenées en WebP 512² avant écriture : la plus grande
+ * carte fait 268 px de large, tout pixel au-delà de 512 est du poids pur.
  *
  * Variables d'environnement :
  *   ARENE_IMAGE_URL    base de l'endpoint LiteLLM
@@ -19,6 +21,7 @@ import path from 'node:path';
 import { ESPECES, ESPECES_PAR_ID } from '../../packages/engine/dist/index.js';
 import { STYLES, SUJETS_TEST, promptPersonnage } from './styles.mjs';
 import { ecrireManifeste } from './manifeste.mjs';
+import { optimiser, COTE } from './optimiser.mjs';
 
 const SORTIE = path.resolve('packages/client/public/cartes');
 const TAILLE = process.env.ARENE_IMAGE_TAILLE ?? '1024x1024';
@@ -153,10 +156,14 @@ async function lot(especes, style, c, format) {
     const prompt = promptPersonnage(e, style);
     process.stdout.write(`  ${style.id}/${e.id} … `);
     try {
-      const { octets, ext } = await generer(c, prompt, format);
+      const { octets: brut, ext } = await generer(c, prompt, format);
       if (ext === 'bin') throw new Error('Format d’image non reconnu dans la réponse');
-      fs.writeFileSync(path.join(dossier, `${e.id}.${ext}`), octets);
-      console.log(`${ext} · ${Math.round(octets.length / 1024)} ko`);
+      const { octets, source } = await optimiser(brut);
+      fs.writeFileSync(path.join(dossier, `${e.id}.webp`), octets);
+      console.log(
+        `${source.format} ${source.largeur}×${source.hauteur} ${Math.round(source.octets / 1024)} ko` +
+          ` → webp ${COTE}² ${Math.round(octets.length / 1024)} ko`,
+      );
       faits++;
       octetsTotal += octets.length;
     } catch (err) {
