@@ -15,6 +15,11 @@ Tu diriges une **équipe de 3 personnages**. Un seul combat à la fois sur le
 terrain, comme dans un Pokémon : tu peux changer de combattant, mais ça coûte
 un tour.
 
+**Un personnage n'a pas de type.** Ni élément, ni faiblesse écrite d'avance :
+ce sont les cartes qu'on lui équipe qui décident de ce qu'il encaisse et de ce
+qu'il fait passer. La teinte d'un sort ne sert qu'à choisir sa couleur et son
+animation.
+
 **Le dé, hérité de la V1, est le cœur du système.** Chaque sort a un nombre de
 faces. Peu de faces = résultat fiable ; beaucoup de faces = loterie. Le jet
 module les dégâts entre 55 % et 100 %… et **tomber sur la face maximale
@@ -23,8 +28,11 @@ quand il passe, il efface.
 
 À cela s'ajoutent :
 
-- **7 éléments** avec table d'efficacité (×1,5 / ×0,7), plus un bonus
-  d'affinité quand le sort partage l'élément du lanceur ;
+- **trois oppositions défensives**, toutes lisibles sur les cartes et aucune
+  écrite d'avance sur un personnage : l'**armure** retire un montant fixe à
+  chaque coup et lamine les sorts à coups multiples ; l'**amorti** plafonne ce
+  qu'un seul coup peut retirer et désamorce les bombes ; l'**immunité** annule
+  les statuts. Il n'y a pas de table des types dans ce jeu ;
 - **l'énergie** : 22 points par tour, chaque sort a un coût, l'attaque de base
   et la garde en régénèrent — impossible de spammer son meilleur sort ;
 - **les statuts** : brûlure, poison, gel, étourdissement, régénération, rage,
@@ -59,6 +67,12 @@ un gène, change un talent déjà choisi, et alimente la **Forge** : le sort qu'
 désigne, sans passer par le hasard. Ses gènes sortent avec un plancher de 14/31
 — corrects, jamais parfaits, pour qu'un exemplaire forgé ne remplace pas un coup
 de chance en booster.
+
+### Ce qu'un personnage peut apprendre
+
+Chaque espèce a sa **liste thématique** de sorts, et tout sort **ouvert à son
+rôle** s'y ajoute. La liste garde l'identité du personnage, le rôle garantit
+qu'aucune carte tirée en booster ne reste inutilisable par personne.
 
 ### La boucle
 

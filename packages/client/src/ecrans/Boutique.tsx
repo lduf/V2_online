@@ -113,10 +113,10 @@ function OffreCarte({
   if (offre.kind === 'PERSO') {
     const e = ESPECES_PAR_ID[offre.id];
     if (!e) return null;
-    couleur = INFO_ELEMENTS[e.element].couleur;
+    couleur = e.art.accent;
     contenu = (
       <>
-        <Avatar art={e.art} element={e.element} taille={76} pose="portrait" />
+        <Avatar art={e.art} taille={76} pose="portrait" />
         <strong>{e.nom}</strong>
         <small>{e.titre}</small>
         <em>

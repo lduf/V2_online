@@ -24,7 +24,7 @@ export type QuandTalent =
   | 'PV_BAS'
   | 'PV_HAUT'
   | 'PREMIER_TOUR'
-  | 'SUPER'
+  | 'DE_HAUT'
   | 'CIBLE_ENTAMEE';
 
 export type EffetTalent =
@@ -48,6 +48,10 @@ export type EffetTalent =
   | { k: 'VAMPIRE'; ratio: number }
   /** Renvoi de dégâts à l'attaquant. */
   | { k: 'EPINES'; ratio: number; categorie?: CategorieSort }
+  /** Armure supplémentaire, en part des PV max, retirée à chaque coup. */
+  | { k: 'ARMURE'; ratio: number }
+  /** Plafond de dégâts par coup, en part des PV max. */
+  | { k: 'AMORTI'; ratio: number }
   /** Points ajoutés à la chance d'infliger un statut. */
   | { k: 'STATUT'; pts: number }
   /** Survit une fois par combat à un coup fatal, avec 1 PV. */
@@ -226,18 +230,21 @@ export const TALENTS: TalentDef[] = [
   {
     id: 'tank_contre',
     nom: 'Contre-Argument',
-    texte: 'Renvoie 22 % de tous les dégâts encaissés.',
+    texte: 'Renvoie 18 % des dégâts encaissés et gagne 1,5 % de PV max d’armure.',
     role: 'TANK',
     palier: 50,
-    effets: [{ k: 'EPINES', ratio: 0.22 }],
+    effets: [
+      { k: 'EPINES', ratio: 0.18 },
+      { k: 'ARMURE', ratio: 0.015 },
+    ],
   },
   {
     id: 'tank_mur',
-    nom: 'Mur de Révisions',
-    texte: 'Bouclier de 14 % des PV max en entrant sur le terrain.',
+    nom: 'Tout Sauf Ça',
+    texte: 'Aucun coup ne peut te retirer plus de 13 % de tes PV max.',
     role: 'TANK',
     palier: 50,
-    effets: [{ k: 'ENTREE_BOUCLIER', ratio: 0.14 }],
+    effets: [{ k: 'AMORTI', ratio: 0.13 }],
   },
 
   // ─────────────────────────── Farceur ───────────────────────────
@@ -260,10 +267,10 @@ export const TALENTS: TalentDef[] = [
   {
     id: 'farceur_coup_du_sort',
     nom: 'Coup du Sort',
-    texte: '+18 % de dégâts sur un coup super efficace.',
+    texte: '+22 % de dégâts quand le dé dépasse 80 % de sa face maximale.',
     role: 'FARCEUR',
     palier: 50,
-    effets: [{ k: 'DEGATS', pct: 18, quand: 'SUPER' }],
+    effets: [{ k: 'DEGATS', pct: 22, quand: 'DE_HAUT' }],
   },
   {
     id: 'farceur_insolence',

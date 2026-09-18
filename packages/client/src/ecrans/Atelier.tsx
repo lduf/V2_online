@@ -8,11 +8,13 @@ import {
   valeurDissolutionPerso,
   ESPECES_PAR_ID,
   INFO_ELEMENTS,
+  INFO_ROLES,
   ITEMS_PAR_ID,
   IV_MAX,
   NATURES_PAR_ID,
   perfectionIvs,
   SORTS_PAR_ID,
+  sortsApprenables,
   TAILLE_EQUIPE,
   TOUTES_STATS,
   progression,
@@ -205,7 +207,8 @@ export function Atelier() {
         .filter((p) => p.uid !== perso?.uid)
         .flatMap((p) => p.sorts.filter((x): x is string => !!x)),
     );
-    return profil.sorts.filter((s) => espece.pool.includes(s.defId) && !pris.has(s.uid));
+    const ouverts = sortsApprenables(espece);
+    return profil.sorts.filter((s) => ouverts.includes(s.defId) && !pris.has(s.uid));
   }, [profil.sorts, profil.persos, espece, perso]);
 
   const objetsDisponibles = useMemo(() => {
@@ -261,7 +264,7 @@ export function Atelier() {
         <>
           <section className="panneau atelier__detail">
             <div className="detail__entete">
-              <Avatar art={espece.art} element={espece.element} taille={120} pose="repos" />
+              <Avatar art={espece.art} taille={120} pose="repos" />
               <div>
                 <h2>
                   {perso.surnom || espece.nom}
@@ -273,8 +276,11 @@ export function Atelier() {
                   {espece.titre} · {espece.role.toLowerCase()}
                 </p>
                 <p className="detail__meta">
-                  <span style={{ color: INFO_ELEMENTS[espece.element].couleur }}>
-                    {INFO_ELEMENTS[espece.element].emoji} {INFO_ELEMENTS[espece.element].nom}
+                  <span
+                    style={{ color: INFO_ROLES[espece.role].couleur }}
+                    title={INFO_ROLES[espece.role].texte}
+                  >
+                    {INFO_ROLES[espece.role].emoji} {INFO_ROLES[espece.role].nom}
                   </span>
                   <Rarete rarete={espece.rarete} />
                   <span>Niveau {perso.niveau}</span>
@@ -414,9 +420,9 @@ export function Atelier() {
                   ))}
                 </div>
                 <details className="atelier__pool">
-                  <summary>Sorts que {espece.nom} peut apprendre ({espece.pool.length})</summary>
+                  <summary>Sorts que {espece.nom} peut apprendre ({sortsApprenables(espece).length})</summary>
                   <ul>
-                    {espece.pool.map((id) => {
+                    {sortsApprenables(espece).map((id) => {
                       const d = SORTS_PAR_ID[id];
                       const possede = profil.sorts.some((s) => s.defId === id);
                       return (

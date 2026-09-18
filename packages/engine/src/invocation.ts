@@ -8,6 +8,9 @@ import type { IvsPerso, IvsSort, Rarete } from './types.js';
 
 export type TypeBanniere = 'STANDARD' | 'LEGENDAIRE';
 
+/** Part des tirages non-personnage qui donnent un objet plutôt qu'un sort. */
+const PART_OBJET = 0.24;
+
 export interface Banniere {
   id: TypeBanniere;
   nom: string;
@@ -103,7 +106,6 @@ export function tirer(banniere: Banniere, rng: Rng, compteurPitie: number): Resu
     rarete = banniere.pitieRarete;
   }
 
-  // 8 % des tirages donnent un objet tenu au lieu d'un sort.
   const veutPerso = rng.next() < banniere.partPerso;
   if (veutPerso) {
     const pool = ESPECES.filter((e) => e.rarete === rarete);
@@ -118,7 +120,11 @@ export function tirer(banniere: Banniere, rng: Rng, compteurPitie: number): Resu
     };
   }
 
-  if (rng.next() < 0.1) {
+  // Les objets sont la troisième famille de cartes, au même titre que les
+  // personnages et les sorts : à 7 % des tirages on n'en voyait presque
+  // jamais, et l'emplacement d'objet — qui porte maintenant le choix entre
+  // armure et amorti — restait vide trop longtemps.
+  if (rng.next() < PART_OBJET) {
     const pool = ITEMS.filter((i) => i.rarete === rarete);
     if (pool.length > 0) {
       const item = rng.pick(pool);

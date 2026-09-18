@@ -1,17 +1,15 @@
 import { useMemo, useState } from 'react';
 import {
   COUT_REROLL_GENES_SORT,
-  ELEMENTS,
   valeurDissolutionSort,
   ESPECES,
   ESPECES_PAR_ID,
   INFO_ELEMENTS,
+  INFO_ROLES,
   ITEMS,
   ITEMS_PAR_ID,
   SORTS,
   SORTS_PAR_ID,
-  multiplicateurElement,
-  type Element,
 } from '@arene/engine';
 import { api, ErreurApi } from '../api';
 import { useApp } from '../store';
@@ -19,7 +17,7 @@ import { jouer } from '../son';
 import { Carte } from '../art/Carte';
 import { Rarete, Vide } from '../composants';
 
-type Onglet = 'personnages' | 'sorts' | 'objets' | 'elements';
+type Onglet = 'personnages' | 'sorts' | 'objets' | 'defenses';
 
 export function Collection() {
   const profil = useApp((s) => s.profil)!;
@@ -102,9 +100,9 @@ export function Collection() {
         </div>
 
         <div className="onglets onglets--compact">
-          {(['personnages', 'sorts', 'objets', 'elements'] as Onglet[]).map((o) => (
+          {(['personnages', 'sorts', 'objets', 'defenses'] as Onglet[]).map((o) => (
             <button key={o} className={onglet === o ? 'est-actif' : ''} onClick={() => setOnglet(o)}>
-              {o === 'elements' ? 'éléments' : o}
+              {o === 'defenses' ? 'défenses' : o}
             </button>
           ))}
         </div>
@@ -201,47 +199,73 @@ export function Collection() {
           </div>
         )}
 
-        {onglet === 'elements' && (
+        {onglet === 'defenses' && (
           <>
             <p className="panneau__aide">
-              Un sort super efficace inflige +50 % de dégâts, un sort peu efficace −30 %. Lancer un
-              sort de son propre élément donne +20 % (affinité). L’Arcane ne subit ni bonus ni malus.
+              Il n’y a pas de table des types dans ce jeu. Un personnage n’a ni élément ni
+              faiblesse écrite d’avance : ce sont les <strong>cartes que tu équipes</strong> qui
+              décident de ce que tu encaisses et de ce que tu fais passer. Trois oppositions, et
+              tout se lit sur les cartes.
             </p>
-            <div className="table-elements">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Attaque ↓ / Défense →</th>
-                    {ELEMENTS.map((e) => (
-                      <th key={e} style={{ color: INFO_ELEMENTS[e].couleur }}>
-                        {INFO_ELEMENTS[e].emoji}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {ELEMENTS.map((a) => (
-                    <tr key={a}>
-                      <th style={{ color: INFO_ELEMENTS[a].couleur }}>
-                        {INFO_ELEMENTS[a].emoji} {INFO_ELEMENTS[a].nom}
-                      </th>
-                      {ELEMENTS.map((d) => {
-                        const m = multiplicateurElement(a as Element, d as Element);
-                        return (
-                          <td
-                            key={d}
-                            className={m > 1 ? 'est-super' : m < 1 ? 'est-faible' : ''}
-                            title={`${INFO_ELEMENTS[a].nom} → ${INFO_ELEMENTS[d].nom} : ×${m}`}
-                          >
-                            {m === 1 ? '·' : `×${m}`}
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+
+            <div className="axes">
+              <div className="axe">
+                <h4>Armure contre cadence</h4>
+                <p>
+                  L’armure retire un montant <strong>fixe à chaque coup</strong>. Un sort qui frappe
+                  trois fois la paie trois fois. Contre une armure épaisse, la mitraille s’écrase ;
+                  contre une cible nue, elle fait bien plus mal qu’un coup unique.
+                </p>
+                <p className="axe__mesure">
+                  Mesuré : la Doudoune d’Amphi divise par deux les dégâts d’un sort à coups
+                  multiples, et n’en retire qu’un quart à un gros coup.
+                </p>
+              </div>
+
+              <div className="axe">
+                <h4>Amorti contre bombe</h4>
+                <p>
+                  L’amorti <strong>plafonne ce qu’un seul coup peut retirer</strong>. Il ne sert à
+                  rien contre une pluie de petits coups, mais il transforme le Balayage de l’Enfer
+                  en formalité.
+                </p>
+                <p className="axe__mesure">
+                  Mesuré : le Casque de Vélo divise par deux les dégâts d’une grosse bombe, et n’en
+                  retire qu’un sixième à un sort à coups multiples.
+                </p>
+              </div>
+
+              <div className="axe">
+                <h4>Statuts contre immunité</h4>
+                <p>
+                  Brûlure, poison, gel et étourdissement gagnent les combats longs. En face, un
+                  objet d’immunité les annule tous — mais il occupe l’emplacement, donc il se paie.
+                </p>
+                <p className="axe__mesure">
+                  Le Gel Hydroalcoolique immunise en permanence ; le Talisman n’annule que le
+                  premier statut.
+                </p>
+              </div>
+
+              <div className="axe">
+                <h4>Tempo contre bombe</h4>
+                <p>
+                  L’énergie ne remonte que de quelques points par tour. Une bombe se paie en tours
+                  d’attente pendant lesquels l’adversaire frappe. Le pari du gros sort est un vrai
+                  pari.
+                </p>
+                <p className="axe__mesure">
+                  La garde et l’attaque de base régénèrent de l’énergie : temporiser est une action,
+                  pas une perte de tour.
+                </p>
+              </div>
             </div>
+
+            <p className="panneau__aide">
+              Pendant un combat, la fiche de l’adversaire affiche son profil défensif, et chaque
+              bouton de sort te dit s’il est bien choisi — « Armure épaisse » quand tu t’apprêtes à
+              mitrailler un mur, « Passe l’armure » quand ta bombe va trouver la faille.
+            </p>
           </>
         )}
       </div>
@@ -273,8 +297,8 @@ function DetailEspece({ especeId, onFermer }: { especeId: string; onFermer: () =
               {espece.nom} <small>{espece.titre}</small>
             </h2>
             <p className="detail__meta">
-              <span style={{ color: INFO_ELEMENTS[espece.element].couleur }}>
-                {INFO_ELEMENTS[espece.element].emoji} {INFO_ELEMENTS[espece.element].nom}
+              <span style={{ color: INFO_ROLES[espece.role].couleur }} title={INFO_ROLES[espece.role].texte}>
+                {INFO_ROLES[espece.role].emoji} {INFO_ROLES[espece.role].nom}
               </span>
               <Rarete rarete={espece.rarete} />
               <span>{espece.role.toLowerCase()}</span>

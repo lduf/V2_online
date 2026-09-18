@@ -47,7 +47,7 @@ export function Connexion() {
       <div className="connexion__vitrine" aria-hidden>
         {vedettes.map((e, i) => (
           <div key={e.id} className="connexion__vedette" style={{ '--i': i } as React.CSSProperties}>
-            <Avatar art={e.art} element={e.element} taille={128} pose="repos" />
+            <Avatar art={e.art} taille={128} pose="repos" />
           </div>
         ))}
       </div>
@@ -97,7 +97,7 @@ export function Connexion() {
                     key={st.especeId}
                     type="button"
                     className={`starter ${starter === st.especeId ? 'est-choisi' : ''}`}
-                    style={{ '--el': INFO_ELEMENTS[e.element].couleur } as React.CSSProperties}
+                    style={{ '--el': e.art.accent } as React.CSSProperties}
                     onClick={() => setStarter(st.especeId)}
                   >
                     <Carte
