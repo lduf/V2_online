@@ -51,8 +51,12 @@ const args = process.argv.slice(2);
 const URL_BASE = args.includes('--url') ? args[args.indexOf('--url') + 1] : 'http://localhost:5174';
 const SORTIE = path.resolve('outils/art/captures');
 
-/** Les sections de la vitrine, par leur `id`. */
-const SECTIONS = ['raretes', 'variantes', 'repli', 'tailles', 'fullart'];
+/**
+ * Les sections pilotées par la bible standard. Le full art n'en fait pas
+ * partie : il a son propre axe — le médium de prestige — et on le capture
+ * une fois par direction, pas une fois par bible plate.
+ */
+const SECTIONS = ['raretes', 'variantes', 'repli', 'tailles'];
 
 fs.mkdirSync(SORTIE, { recursive: true });
 
@@ -73,7 +77,9 @@ await page.addStyleTag({
   content: '*, *::before, *::after { animation: none !important; transition: none !important; }',
 });
 
-const styles = await page.$$eval('.demo-carte__styles button', (b) =>
+// Restreint à l'en-tête : la section full art réutilise la même classe pour
+// son propre sélecteur, et un `button` sans `data-style` sortirait « null ».
+const styles = await page.$$eval('.demo-carte__entete button[data-style]', (b) =>
   b.map((x) => x.getAttribute('data-style')),
 );
 console.log(`styles trouvés : ${styles.join(', ')}`);
@@ -83,7 +89,7 @@ for (const style of styles) {
   // est en bas, et le test de survol de Playwright tombe alors sur une carte
   // au lieu du bouton.
   await page.evaluate(() => window.scrollTo(0, 0));
-  await page.click(`.demo-carte__styles button[data-style="${style}"]`);
+  await page.click(`.demo-carte__entete button[data-style="${style}"]`);
   // Les illustrations sont en `loading="lazy"` : sans attente explicite, une
   // section hors écran se capture avant d'avoir chargé son image.
   await page.waitForFunction(
@@ -98,6 +104,28 @@ for (const style of styles) {
     await cible.screenshot({ path: fichier });
     console.log(`  ${style}/${id} → ${Math.round(fs.statSync(fichier).size / 1024)} ko`);
   }
+}
+
+// Le full art : une capture par direction de prestige, hors de la boucle des
+// bibles plates puisqu'il n'en dépend plus.
+await page.evaluate(() => window.scrollTo(0, 0));
+const prestiges = await page.$$eval('#fullart button[data-prestige]', (b) =>
+  b.map((x) => x.getAttribute('data-prestige')),
+);
+console.log(`prestiges trouvés : ${prestiges.join(', ') || 'aucun'}`);
+
+for (const p of prestiges) {
+  await page.click(`#fullart button[data-prestige="${p}"]`);
+  await page.waitForFunction(
+    () => Array.from(document.images).every((i) => i.complete && i.naturalWidth > 0),
+    null,
+    { timeout: 15000 },
+  );
+  const cible = await page.$('#fullart');
+  if (!cible) continue;
+  const fichier = path.join(SORTIE, `${p}.png`);
+  await cible.screenshot({ path: fichier });
+  console.log(`  ${p} → ${Math.round(fs.statSync(fichier).size / 1024)} ko`);
 }
 
 await navigateur.close();

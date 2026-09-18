@@ -31,7 +31,8 @@ import { ecrireManifeste } from './manifeste.mjs';
 import { optimiser, PROFILS } from './optimiser.mjs';
 
 const SORTIE = path.resolve('packages/client/public/cartes');
-const TAILLE = process.env.ARENE_IMAGE_TAILLE ?? '1024x1024';
+/** Surcharge manuelle ; sinon chaque profil dit quelle taille il demande. */
+const TAILLE = process.env.ARENE_IMAGE_TAILLE ?? null;
 
 /** Extensions reconnues, dans l'ordre de préférence à la lecture. */
 const EXTENSIONS = ['webp', 'png', 'jpg'];
@@ -88,7 +89,7 @@ function extensionDepuisOctets(o) {
   return 'bin';
 }
 
-async function generer({ url, cle, modele }, prompt, format) {
+async function generer({ url, cle, modele }, prompt, format, taille) {
   let derniereErreur = '';
   for (const cible of cheminsCandidats(url)) {
     let r;
@@ -100,7 +101,8 @@ async function generer({ url, cle, modele }, prompt, format) {
           model: modele,
           prompt,
           n: 1,
-          size: TAILLE,
+          // Omis quand le profil ne l'épingle pas : voir PROFILS.pleine.
+          ...(taille ? { size: taille } : {}),
           response_format: 'b64_json',
           ...(format ? { output_format: format } : {}),
         }),
@@ -165,6 +167,7 @@ async function lot(especes, style, c, format, profil = PROFILS.carre) {
   const dossier = path.join(SORTIE, style.id);
   fs.mkdirSync(dossier, { recursive: true });
   let faits = 0, sautes = 0, octetsTotal = 0;
+  const suspectes = [];
   for (const e of especes) {
     const existant = EXTENSIONS
       .map((x) => path.join(dossier, `${e.id}.${x}`))
@@ -173,14 +176,16 @@ async function lot(especes, style, c, format, profil = PROFILS.carre) {
     const prompt = promptPersonnage(e, style);
     process.stdout.write(`  ${style.id}/${e.id} … `);
     try {
-      const { octets: brut, ext } = await generer(c, prompt, format);
+      const { octets: brut, ext } = await generer(c, prompt, format, TAILLE ?? profil.taille);
       if (ext === 'bin') throw new Error('Format d’image non reconnu dans la réponse');
-      const { octets, source } = await optimiser(brut, profil);
+      const { octets, source, bande } = await optimiser(brut, profil);
       fs.writeFileSync(path.join(dossier, `${e.id}.webp`), octets);
       console.log(
         `${source.format} ${source.largeur}×${source.hauteur} ${Math.round(source.octets / 1024)} ko` +
-          ` → webp ${profil.largeur}×${profil.hauteur} ${Math.round(octets.length / 1024)} ko`,
+          ` → webp ${profil.largeur}×${profil.hauteur} ${Math.round(octets.length / 1024)} ko` +
+          (bande?.suspecte ? `  ⚠ bandes (×${bande.rapport.toFixed(1)})` : ''),
       );
+      if (bande?.suspecte) suspectes.push(e.id);
       faits++;
       octetsTotal += octets.length;
     } catch (err) {
@@ -195,13 +200,24 @@ async function lot(especes, style, c, format, profil = PROFILS.carre) {
   }
   const poids = faits ? ` · ${Math.round(octetsTotal / 1024)} ko produits` : '';
   console.log(`${style.id} : ${faits} générées, ${sautes} déjà présentes${poids}`);
+  if (suspectes.length) {
+    // Le fichier est écrit : c'est un humain qui décide de le jeter. On donne
+    // la commande, parce que chercher soi-même quoi supprimer fait relancer
+    // le lot entier — et chaque image se paie.
+    console.log(
+      `  ⚠ ${suspectes.length} image(s) probablement letterboxée(s) : ${suspectes.join(', ')}`,
+    );
+    console.log(
+      `    rm ${suspectes.map((id) => path.join(dossier, `${id}.webp`)).join(' ')}  puis relancer`,
+    );
+  }
 }
 
 const args = process.argv.slice(2);
 const a = (n) => args[args.indexOf(n) + 1];
 const format = args.includes('--format') ? a('--format') : undefined;
 const c = conf();
-console.log(`modèle ${c.modele} · taille ${TAILLE} · sortie ${SORTIE}`);
+console.log(`modèle ${c.modele} · sortie ${SORTIE}${TAILLE ? ` · taille forcée ${TAILLE}` : ''}`);
 
 try {
   if (args.includes('--pleine')) {

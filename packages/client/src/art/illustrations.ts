@@ -19,17 +19,17 @@ export const ILLUSTRATIONS: Record<string, Record<string, string>> = {
     vlad: '/cartes/gouache/vlad.webp',
     zora: '/cartes/gouache/zora.webp',
   },
-  'pleine-encre': {
-    ignis: '/cartes/pleine-encre/ignis.webp',
-    zora: '/cartes/pleine-encre/zora.webp',
+  'pleine-neon': {
+    ignis: '/cartes/pleine-neon/ignis.webp',
+    zora: '/cartes/pleine-neon/zora.webp',
   },
-  'pleine-gouache': {
-    ignis: '/cartes/pleine-gouache/ignis.webp',
-    zora: '/cartes/pleine-gouache/zora.webp',
+  'pleine-orage': {
+    ignis: '/cartes/pleine-orage/ignis.webp',
+    zora: '/cartes/pleine-orage/zora.webp',
   },
-  'pleine-serigraphie': {
-    ignis: '/cartes/pleine-serigraphie/ignis.webp',
-    zora: '/cartes/pleine-serigraphie/zora.webp',
+  'pleine-vitrail': {
+    ignis: '/cartes/pleine-vitrail/ignis.webp',
+    zora: '/cartes/pleine-vitrail/zora.webp',
   },
   serigraphie: {
     brigitte: '/cartes/serigraphie/brigitte.webp',

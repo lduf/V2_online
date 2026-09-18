@@ -61,26 +61,41 @@ function perso(
 /** Les six sujets de validation, dans l'ordre des quatre raretés du moteur. */
 const RARETES = ['maxence', 'ondine', 'brigitte', 'vlad', 'zora', 'ignis'];
 
-/** Les bibles standard présentes dans le manifeste, plus le repli SVG. */
+/** Les bibles du traitement standard : l'illustration au centre du cadre. */
 function biblesDisponibles(): string[] {
   return Object.keys(ILLUSTRATIONS).filter((s) => !s.startsWith('pleine-'));
+}
+
+/**
+ * Les directions de prestige, pour le full art.
+ *
+ * Elles ne sont plus dérivées de la bible plate : le prestige a son propre
+ * médium (rendu, reflets, profondeur de champ), que les bibles plates
+ * interdisent par construction. Deux axes indépendants, donc deux sélecteurs.
+ */
+function prestigesDisponibles(): string[] {
+  return Object.keys(ILLUSTRATIONS).filter((s) => s.startsWith('pleine-'));
 }
 
 function Section({
   id,
   titre,
   note,
+  outils,
   children,
 }: {
   id: string;
   titre: string;
   note: string;
+  /** Sélecteur propre à la section, quand elle a son propre axe de choix. */
+  outils?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
     <section className="demo-carte__section" id={id}>
       <h2>{titre}</h2>
       <p className="demo-carte__note">{note}</p>
+      {outils}
       <div className="demo-carte__rangee">{children}</div>
     </section>
   );
@@ -91,7 +106,8 @@ export function Vitrine() {
   const [style, setStyle] = useState(
     bibles.includes(STYLE_ACTIF) ? STYLE_ACTIF : (bibles[0] ?? SANS_ILLUSTRATION),
   );
-  const stylePlein = `pleine-${style}`;
+  const prestiges = prestigesDisponibles();
+  const [stylePlein, setStylePlein] = useState(prestiges[0] ?? SANS_ILLUSTRATION);
   const aDuFullArt = Boolean(ILLUSTRATIONS[stylePlein]);
 
   return (
@@ -216,10 +232,24 @@ export function Vitrine() {
         <Section
           id="fullart"
           titre="Maquette full art"
+          outils={
+            <div className="demo-carte__styles">
+              {prestiges.map((p) => (
+                <button
+                  key={p}
+                  className={p === stylePlein ? 'est-actif' : ''}
+                  onClick={() => setStylePlein(p)}
+                  data-prestige={p}
+                >
+                  {p.replace('pleine-', '')}
+                </button>
+              ))}
+            </div>
+          }
           note={
             aDuFullArt
-              ? "L'illustration occupe la carte bord à bord, le texte passe en surimpression sur un voile dégradé. Traitement réservé aux deux raretés du haut."
-              : `Aucune illustration full art pour « ${style} » — les cartes ci-dessous montrent le repli.`
+              ? "L'illustration occupe la carte bord à bord, le texte passe en surimpression sur un voile dégradé. Le prestige a son propre médium — rendu, reflets, profondeur de champ — que les bibles plates interdisent : c'est un axe indépendant du choix ci-dessus, comme l'alternate art d'un jeu de cartes."
+              : 'Aucune illustration full art sur le disque — les cartes ci-dessous montrent le repli.'
           }
         >
           {['zora', 'ignis'].map((id) => (
