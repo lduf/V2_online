@@ -1,5 +1,6 @@
 import { ITEMS_PAR_ID } from './data/items.js';
 import { effetsTalents, talentsActifs } from './talents.js';
+import { effetsPassif, reglesPassif, type EffetPassif, type QuandPassif } from './passifs.js';
 import { ESPECES_PAR_ID } from './data/especes.js';
 import { Rng } from './rng.js';
 import { multiplicateurPalier } from './stats.js';
@@ -109,12 +110,66 @@ function vivants(eq: EquipeCombat): number[] {
 function statEffective(u: UniteCombat, k: Exclude<StatKey, 'pv'>): number {
   let v = u.stats[k] * multiplicateurPalier(u.paliers[k]);
   if (k === 'vit' && u.statuts.some((s) => s.id === 'GEL')) v *= 0.5;
-  if (k === 'atq' && u.passifId === 'tenacite' && u.pv / u.pvMax < 0.3) v *= 1.4;
+  for (const e of effetsPassif(u.passifId, 'STAT')) {
+    if (e.stat === k && conditionOk(e.quand, e.seuil, u)) v *= e.mult;
+  }
   return Math.max(1, v);
 }
 
 function aStatut(u: UniteCombat, id: StatutId): boolean {
   return u.statuts.some((s) => s.id === id);
+}
+
+/**
+ * Évalue la condition d'un effet de passif. `cible` n'est fourni que pour les
+ * conditions qui parlent de l'adversaire.
+ */
+function conditionOk(
+  quand: QuandPassif | undefined,
+  seuil: number | undefined,
+  u: UniteCombat,
+  cible?: UniteCombat,
+): boolean {
+  const s = seuil ?? 0.5;
+  switch (quand ?? 'TOUJOURS') {
+    case 'TOUJOURS':
+      return true;
+    case 'PV_BAS':
+      return u.pv / u.pvMax < s;
+    case 'PV_HAUT':
+      return u.pv / u.pvMax > s;
+    case 'PREMIER_TOUR':
+      return (u.flags.tours ?? 0) === 0;
+    case 'CIBLE_ENTAMEE':
+      return !!cible && cible.pv / cible.pvMax < s;
+    case 'CIBLE_INTACTE':
+      return !!cible && cible.pv / cible.pvMax >= s;
+    default:
+      return true;
+  }
+}
+
+/** Produit cumulé des effets de dégâts d'un passif qui s'appliquent ici. */
+function multPassifDegats(
+  att: UniteCombat,
+  def: UniteCombat,
+  sort: SortPret,
+  round: number,
+): number {
+  let m = 1;
+  for (const e of reglesPassif(att.passifId)) {
+    if (e.k === 'DEGATS_ROUND') {
+      m *= 1 + Math.min(e.max, e.parRound * (round - 1));
+      continue;
+    }
+    if (e.k !== 'DEGATS') continue;
+    if (e.categorie && e.categorie !== sort.def.categorie) continue;
+    if (e.deMin !== undefined && sort.def.de < e.deMin) continue;
+    if (e.statutCible && !aStatut(def, e.statutCible)) continue;
+    if (!conditionOk(e.quand, e.seuil, att, def)) continue;
+    m *= e.mult;
+  }
+  return m;
 }
 
 function talentsActifsDe(u: UniteCombat) {
@@ -152,6 +207,7 @@ function armureDe(u: UniteCombat, categorie: CategorieSort): number {
   let a = stat * FACTEUR_ARMURE;
   if (itemEffet(u) === 'PLASTRON') a += u.pvMax * 0.05;
   for (const e of effetsTalents(u.talents, 'ARMURE')) a += u.pvMax * e.ratio;
+  for (const e of effetsPassif(u.passifId, 'ARMURE')) a += u.pvMax * e.ratio;
   if (u.flags.garde === 1) a *= 1.6;
   return a;
 }
@@ -168,7 +224,15 @@ function amortiDe(u: UniteCombat): number {
   for (const e of effetsTalents(u.talents, 'AMORTI')) {
     cap = cap === 0 ? e.ratio : Math.min(cap, e.ratio);
   }
+  for (const e of effetsPassif(u.passifId, 'AMORTI')) {
+    cap = cap === 0 ? e.ratio : Math.min(cap, e.ratio);
+  }
   return cap;
+}
+
+/** Nom lisible du passif, pour les événements affichés au joueur. */
+function nomPassif(u: UniteCombat): string {
+  return ESPECES_PAR_ID[u.especeId]?.passif.nom ?? 'Passif';
 }
 
 function itemEffet(u: UniteCombat): string | undefined {
@@ -256,14 +320,17 @@ function entreeEnJeu(etat: EtatCombat, cote: Cote, evts: EvtCombat[]): void {
     }
   }
 
-  if (u.passifId === 'aube') {
-    const avant = u.statuts.length;
-    u.statuts = u.statuts.filter((s) => !estMauvais(s.id));
-    changerPalier(etat, cote, u, 'res', 1, evts);
-    if (avant !== u.statuts.length || true) {
-      evts.push({ t: 'PASSIF', cote, uniteUid: u.uid, nom: 'Aube' });
+  for (const e of effetsPassif(u.passifId, 'ENTREE')) {
+    if (e.purge) u.statuts = u.statuts.filter((s) => !estMauvais(s.id));
+    // Le palier de stat ne se gagne qu'à la PREMIÈRE entrée : sinon il suffit
+    // de sortir et de rentrer pour l'empiler, et les passifs d'entrée
+    // deviennent les meilleurs du jeu en 3 contre 3.
+    if (e.stat && e.palier && !u.flags.entreeFaite) {
+      changerPalier(etat, cote, u, e.stat, e.palier, evts);
     }
+    evts.push({ t: 'PASSIF', cote, uniteUid: u.uid, nom: nomPassif(u) });
   }
+  u.flags.entreeFaite = 1;
 }
 
 // ───────────────────────────── Boucle de tour ─────────────────────────────
@@ -320,26 +387,25 @@ function debutDeTour(etat: EtatCombat, cote: Cote, evts: EvtCombat[]): void {
 
   // Régénération d'énergie.
   let gain = ENERGIE_PAR_TOUR;
-  if (u.passifId === 'surcharge') gain += 14;
+  for (const e of effetsPassif(u.passifId, 'ENERGIE_TOUR')) gain += e.valeur;
   if (itemEffet(u) === 'BATTERIE') gain += 10;
   for (const e of effetsTalents(u.talents, 'ENERGIE')) gain += e.parTour;
   donnerEnergie(etat, cote, u, gain, evts);
 
-  if (u.passifId === 'amende') {
+  for (const e of effetsPassif(u.passifId, 'VOL_ENERGIE')) {
     const adv = actif(etat, autreCote(cote));
-    const vol = Math.min(8, adv.energie);
+    const vol = Math.min(e.valeur, adv.energie);
     if (vol > 0) {
       donnerEnergie(etat, autreCote(cote), adv, -vol, evts);
       donnerEnergie(etat, cote, u, vol, evts);
-      evts.push({ t: 'PASSIF', cote, uniteUid: u.uid, nom: 'Amende Immédiate' });
+      evts.push({ t: 'PASSIF', cote, uniteUid: u.uid, nom: nomPassif(u) });
     }
   }
 
-  if (u.passifId === 'egide') {
-    const val = Math.round(u.pvMax * 0.09);
-    u.bouclier += val;
+  for (const e of effetsPassif(u.passifId, 'BOUCLIER_TOUR')) {
+    u.bouclier += Math.round(u.pvMax * e.ratio);
     evts.push({ t: 'BOUCLIER', cote, uniteUid: u.uid, valeur: u.bouclier });
-    evts.push({ t: 'PASSIF', cote, uniteUid: u.uid, nom: 'Égide' });
+    evts.push({ t: 'PASSIF', cote, uniteUid: u.uid, nom: nomPassif(u) });
   }
 }
 
@@ -542,7 +608,9 @@ function lancerSort(
 
   // Précision.
   let precision = sort.precision;
-  if (lanceur.passifId === 'theoreme' && sort.def.de >= 15) precision += 12;
+  for (const e of effetsPassif(lanceur.passifId, 'PRECISION')) {
+    if (e.deMin === undefined || sort.def.de >= e.deMin) precision += e.pts;
+  }
   if (itemEffet(lanceur) === 'FOCUS') precision += 8;
   if (aStatut(lanceur, 'CONCENTRATION')) precision += 15;
   for (const e of effetsTalents(lanceur.talents, 'PRECISION')) precision += e.pts;
@@ -555,10 +623,11 @@ function lancerSort(
       evts.push({ t: 'MESSAGE', texte: `${sort.def.nom} manque sa cible…`, ton: 'mal' });
       return;
     }
-    if (cible.passifId === 'esquive' && rng.chance(18)) {
+    const esq = effetsPassif(cible.passifId, 'ESQUIVE');
+    if (esq.length > 0 && rng.chance(esq.reduce((a, e) => a + e.pct, 0))) {
       etat.rng = rng.state;
       evts.push({ t: 'RATE', cote });
-      evts.push({ t: 'PASSIF', cote: coteCible, uniteUid: cible.uid, nom: 'Esquive Fluide' });
+      evts.push({ t: 'PASSIF', cote: coteCible, uniteUid: cible.uid, nom: nomPassif(cible) });
       evts.push({ t: 'MESSAGE', texte: `${cible.nom} esquive !`, ton: 'info' });
       return;
     }
@@ -567,11 +636,13 @@ function lancerSort(
   // Le dé, héritage de la V1.
   const faces = Math.max(1, sort.def.de);
   let jet = rng.de(faces);
-  if (lanceur.passifId === 'de_pipe' && faces > 1 && jet < faces * 0.4) {
-    const relance = rng.de(faces);
-    if (relance > jet) {
-      jet = relance;
-      evts.push({ t: 'PASSIF', cote, uniteUid: lanceur.uid, nom: 'Dé Pipé' });
+  for (const e of effetsPassif(lanceur.passifId, 'RELANCE_DE')) {
+    if (faces > 1 && jet < faces * e.seuil) {
+      const relance = rng.de(faces);
+      if (relance > jet) {
+        jet = relance;
+        evts.push({ t: 'PASSIF', cote, uniteUid: lanceur.uid, nom: nomPassif(lanceur) });
+      }
     }
   }
   // Un talent peut relever le plancher du dé : la loterie reste, mais on ne
@@ -655,7 +726,6 @@ function resoudreDegats(
   // de total : c'est ce qui le rend meilleur que la frappe unique CONTRE UNE
   // CIBLE PEU ARMURÉE, et donc ce qui rend l'armure intéressante en face.
   let puissance = (sort.puissance / coups) * (1 + BONUS_CADENCE * (coups - 1));
-  if (att.passifId === 'theoreme' && sort.def.de >= 15) puissance *= 1.12;
   if (aStatut(att, 'CONCENTRATION')) puissance *= 1.3;
 
   let degats =
@@ -665,21 +735,19 @@ function resoudreDegats(
 
   // Critique.
   let chanceCrit = 5 + statEffective(att, 'chance') / 12 + sort.critique;
-  if (att.passifId === 'coup_de_sang' && att.pv / att.pvMax < 0.5) chanceCrit += 25;
+  for (const e of effetsPassif(att.passifId, 'CRIT')) {
+    if (conditionOk(e.quand, e.seuil, att, def)) chanceCrit += e.pts;
+  }
   for (const e of effetsTalents(att.talents, 'CRIT')) chanceCrit += e.pts;
   const critique = parfait || rng.chance(Math.min(CRIT_MAX, chanceCrit));
   if (critique) degats *= MULT_CRITIQUE;
 
-  // Passifs offensifs.
-  if (att.passifId === 'montee_temperature') {
-    degats *= 1 + Math.min(0.42, 0.07 * (etat.round - 1));
+  // Passifs offensifs, tous lus depuis les données.
+  const mPassif = multPassifDegats(att, def, sort, etat.round);
+  if (mPassif !== 1) {
+    degats *= mPassif;
+    if (mPassif > 1.2) evts.push({ t: 'PASSIF', cote, uniteUid: att.uid, nom: nomPassif(att) });
   }
-  if (att.passifId === 'embuscade' && (att.flags.tours ?? 0) === 0) {
-    degats *= 1.45;
-    evts.push({ t: 'PASSIF', cote, uniteUid: att.uid, nom: 'Embuscade' });
-  }
-  if (att.passifId === 'coup_de_sang' && att.pv / att.pvMax < 0.5) degats *= 1.15;
-  if (att.passifId === 'brasier' && aStatut(def, 'BRULURE')) degats *= 1.28;
 
   // Talents offensifs.
   let bonusTalent = talentPct(att, 'DEGATS', sort.def.categorie);
@@ -708,7 +776,9 @@ function resoudreDegats(
   if (aStatut(def, 'RAGE')) degats *= 1.15;
 
   // Défenses.
-  if (def.passifId === 'mur_porteur' && sort.def.categorie === 'PHYSIQUE') degats *= 0.82;
+  for (const e of effetsPassif(def.passifId, 'ENCAISSE')) {
+    if (!e.categorie || e.categorie === sort.def.categorie) degats *= e.mult;
+  }
   const reduction = talentPct(def, 'ENCAISSE', sort.def.categorie);
   if (reduction) degats *= Math.max(0.4, 1 - reduction / 100);
   if (def.flags.garde === 1) degats *= 0.6;
@@ -772,11 +842,19 @@ function resoudreDegats(
   if (efficacite === 'SUPER') st.superEfficaces += 1;
 
   // Effets après dégâts.
-  if (att.passifId === 'brasier' && critique && !def.ko) {
-    ajouterStatut(etat, coteAdv, def, 'BRULURE', 3, evts);
+  if (critique && !def.ko) {
+    for (const e of effetsPassif(att.passifId, 'STATUT_SUR_CRIT')) {
+      ajouterStatut(etat, coteAdv, def, e.statut, e.duree, evts);
+    }
   }
-  if (att.passifId === 'drain_ame' && sort.def.categorie === 'MAGIQUE') {
-    soigner(etat, cote, att, Math.round(inflige * 0.14), evts);
+  for (const e of effetsPassif(att.passifId, 'VAMPIRE')) {
+    if (e.categorie && e.categorie !== sort.def.categorie) continue;
+    soigner(etat, cote, att, Math.round(inflige * e.ratio), evts);
+  }
+  for (const e of effetsPassif(def.passifId, 'EPINES')) {
+    if (e.categorie && e.categorie !== sort.def.categorie) continue;
+    if (att.ko) break;
+    infligerBrut(etat, cote, att, Math.round(inflige * e.ratio), evts, 'NEUTRE', false);
   }
   if (effet === 'VAMPIRIQUE') {
     soigner(etat, cote, att, Math.round(inflige * 0.12), evts);
@@ -816,7 +894,8 @@ function infligerBrut(
   let pvPerdus = Math.min(u.pv, restant);
   u.pv -= pvPerdus;
 
-  const survieTalent = effetsTalents(u.talents, 'SURVIE').length > 0;
+  const survieTalent =
+    effetsTalents(u.talents, 'SURVIE').length > 0 || effetsPassif(u.passifId, 'SURVIE').length > 0;
   if (u.pv <= 0 && (itemEffet(u) === 'SURVIE' || survieTalent) && !u.flags.survieUtilisee) {
     u.flags.survieUtilisee = 1;
     u.pv = 1;
@@ -868,7 +947,7 @@ function soigner(
 ): number {
   if (u.ko || montant <= 0) return 0;
   let m = montant;
-  if (u.passifId === 'second_souffle') m *= 1.25;
+  for (const e of effetsPassif(u.passifId, 'SOIN_RECU')) m *= e.mult;
   const bonusSoin = talentPct(u, 'SOIN');
   if (bonusSoin) m *= 1 + bonusSoin / 100;
   // Pendant l'escalade, les soins ne suivent pas : impossible de temporiser.
@@ -923,7 +1002,7 @@ function ajouterStatut(
   if (u.ko) return;
   // L'antidote est l'axe « statuts contre purge » : immunité permanente, mais
   // elle occupe l'emplacement d'objet — c'est un vrai arbitrage.
-  if (estMauvais(id) && itemEffet(u) === 'ANTIDOTE') {
+  if (estMauvais(id) && (itemEffet(u) === 'ANTIDOTE' || effetsPassif(u.passifId, 'ANTIDOTE').length > 0)) {
     evts.push({ t: 'MESSAGE', texte: `${u.nom} est immunisé.`, ton: 'bien' });
     return;
   }
@@ -1082,8 +1161,10 @@ function terminerTour(
     }
   }
 
-  if (!u.ko && u.passifId === 'ressac') {
-    soigner(etat, cote, u, Math.round(u.pvMax * 0.05), evts);
+  if (!u.ko) {
+    for (const e of effetsPassif(u.passifId, 'REGEN_TOUR')) {
+      soigner(etat, cote, u, Math.round(u.pvMax * e.ratio), evts);
+    }
   }
 
   // Décompte des durées.
@@ -1175,7 +1256,7 @@ function profilDefense(u: UniteCombat): ProfilDefense {
     armurePhysique: cran(armureDe(u, 'PHYSIQUE'), u.pvMax),
     armureMagique: cran(armureDe(u, 'MAGIQUE'), u.pvMax),
     amorti: amortiDe(u) > 0,
-    antidote: itemEffet(u) === 'ANTIDOTE',
+    antidote: itemEffet(u) === 'ANTIDOTE' || effetsPassif(u.passifId, 'ANTIDOTE').length > 0,
   };
 }
 

@@ -20,3 +20,4 @@ export * from './tour.js';
 export * from './objectifs.js';
 export * from './essence.js';
 export * from './talents.js';
+export * from './passifs.js';

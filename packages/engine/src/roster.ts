@@ -79,6 +79,9 @@ export function creerPersoAleatoire(
  * Compose un jeu de 4 sorts cohérent depuis un pool : signature garantie,
  * minimum 2 sorts qui infligent des dégâts, maximum 1 sort de soutien pur.
  */
+/** En dessous, un sort ne menace personne : il faut au moins ça dans un kit. */
+const SEUIL_MENACE = 70;
+
 export function composerKit(signature: string, pool: string[], rng: Rng): string[] {
   const estSoutien = (id: string): boolean => getSortDef(id).categorie === 'SOUTIEN';
   const faitMal = (id: string): boolean => getSortDef(id).puissance > 0;
@@ -89,19 +92,32 @@ export function composerKit(signature: string, pool: string[], rng: Rng): string
   const compteSoutien = (): number => choisis.filter(estSoutien).length;
   const compteOffensif = (): number => choisis.filter(faitMal).length;
 
-  // 1. Compléter jusqu'à 2 sorts offensifs.
+  // 1. Garantir une vraie menace. Le quota « deux sorts offensifs » ne
+  //    suffisait pas : un personnage dont le pool ne contient que des sorts
+  //    à faible puissance repartait avec un kit incapable de tuer, et
+  //    perdait tous ses duels sans que ses stats ni son passif soient en
+  //    cause. On impose donc le sort le plus puissant du pool.
+  const offensifsPool = restant.filter(faitMal);
+  if (offensifsPool.length > 0 && !choisis.some((id) => getSortDef(id).puissance >= SEUIL_MENACE)) {
+    const plusFort = offensifsPool.reduce((a, b) =>
+      getSortDef(b).puissance > getSortDef(a).puissance ? b : a,
+    );
+    choisis.push(plusFort);
+  }
+
+  // 2. Compléter jusqu'à 2 sorts offensifs.
   for (const id of restant) {
     if (choisis.length >= 4 || compteOffensif() >= 2) break;
     if (!choisis.includes(id) && faitMal(id)) choisis.push(id);
   }
-  // 2. Remplir le reste en respectant le quota de soutien.
+  // 3. Remplir le reste en respectant le quota de soutien.
   for (const id of restant) {
     if (choisis.length >= 4) break;
     if (choisis.includes(id)) continue;
     if (estSoutien(id) && compteSoutien() >= 1) continue;
     choisis.push(id);
   }
-  // 3. Filet de sécurité si le pool est trop petit.
+  // 4. Filet de sécurité si le pool est trop petit.
   for (const id of restant) {
     if (choisis.length >= 4) break;
     if (!choisis.includes(id)) choisis.push(id);
