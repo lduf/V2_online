@@ -90,6 +90,13 @@ export interface SortDef {
   recharge: number;
   precision: number;
   effets: EffetSort[];
+  /**
+   * Rôles capables d'apprendre ce sort, en plus des espèces qui le listent
+   * explicitement dans leur `pool`. Sans ce champ, un sort tiré en booster
+   * pouvait n'être équipable par personne — ce qui est intolérable dans un jeu
+   * où la carte est la base.
+   */
+  roles?: Role[];
   texte: string;
   vfx: VfxSpec;
   prix: number;

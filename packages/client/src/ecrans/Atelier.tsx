@@ -14,6 +14,7 @@ import {
   NATURES_PAR_ID,
   perfectionIvs,
   SORTS_PAR_ID,
+  sortsApprenables,
   TAILLE_EQUIPE,
   TOUTES_STATS,
   progression,
@@ -206,7 +207,8 @@ export function Atelier() {
         .filter((p) => p.uid !== perso?.uid)
         .flatMap((p) => p.sorts.filter((x): x is string => !!x)),
     );
-    return profil.sorts.filter((s) => espece.pool.includes(s.defId) && !pris.has(s.uid));
+    const ouverts = sortsApprenables(espece);
+    return profil.sorts.filter((s) => ouverts.includes(s.defId) && !pris.has(s.uid));
   }, [profil.sorts, profil.persos, espece, perso]);
 
   const objetsDisponibles = useMemo(() => {
@@ -418,9 +420,9 @@ export function Atelier() {
                   ))}
                 </div>
                 <details className="atelier__pool">
-                  <summary>Sorts que {espece.nom} peut apprendre ({espece.pool.length})</summary>
+                  <summary>Sorts que {espece.nom} peut apprendre ({sortsApprenables(espece).length})</summary>
                   <ul>
-                    {espece.pool.map((id) => {
+                    {sortsApprenables(espece).map((id) => {
                       const d = SORTS_PAR_ID[id];
                       const possede = profil.sorts.some((s) => s.defId === id);
                       return (

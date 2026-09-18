@@ -68,6 +68,12 @@ désigne, sans passer par le hasard. Ses gènes sortent avec un plancher de 14/3
 — corrects, jamais parfaits, pour qu'un exemplaire forgé ne remplace pas un coup
 de chance en booster.
 
+### Ce qu'un personnage peut apprendre
+
+Chaque espèce a sa **liste thématique** de sorts, et tout sort **ouvert à son
+rôle** s'y ajoute. La liste garde l'identité du personnage, le rôle garantit
+qu'aucune carte tirée en booster ne reste inutilisable par personne.
+
 ### La boucle
 
 Combattre → gagner des **crédits**, des **éclats** et de l'**XP** → acheter des

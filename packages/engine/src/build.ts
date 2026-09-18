@@ -1,9 +1,11 @@
 import { getEspece } from './data/especes.js';
+import { SORTS, SORTS_PAR_ID } from './data/sorts.js';
 import { calculerStats, paliersVides, preparerSort } from './stats.js';
 import { artEffectif, aSceauParfait } from './variantes.js';
 import { effetsTalents } from './talents.js';
 import type {
   EquipeCombat,
+  EspeceDef,
   PersoPossede,
   SortPossede,
   SortPret,
@@ -79,6 +81,22 @@ export function construireEquipe(
 
 export const TAILLE_EQUIPE = 3;
 
+/**
+ * Ce qu'une espèce peut apprendre : sa liste thématique, plus tout sort ouvert
+ * à son rôle. La liste garde l'identité du personnage, le rôle garantit
+ * qu'aucune carte tirée ne reste inutilisable.
+ */
+export function sortsApprenables(espece: EspeceDef): string[] {
+  const ouverts = SORTS.filter((s) => s.roles?.includes(espece.role)).map((s) => s.id);
+  return [...new Set([...espece.pool, ...ouverts])];
+}
+
+export function peutApprendre(espece: EspeceDef, defId: string): boolean {
+  if (espece.pool.includes(defId)) return true;
+  const def = SORTS_PAR_ID[defId];
+  return !!def?.roles?.includes(espece.role);
+}
+
 export interface ProblemeEquipe {
   code: string;
   message: string;
@@ -113,7 +131,7 @@ export function validerEquipe(
     }
     for (const uid of sortsValides) {
       const sp = sortsPossedes.get(uid)!;
-      if (!espece.pool.includes(sp.defId)) {
+      if (!peutApprendre(espece, sp.defId)) {
         problemes.push({
           code: 'HORS_POOL',
           message: `${espece.nom} ne peut pas apprendre ce sort.`,

@@ -1,5 +1,6 @@
 import { ESPECES, ESPECES_PAR_ID, getEspece } from './data/especes.js';
 import { choixTalents, PALIERS_TALENT } from './talents.js';
+import { sortsApprenables } from './build.js';
 import { ITEMS } from './data/items.js';
 import { getSortDef } from './data/sorts.js';
 import { Rng } from './rng.js';
@@ -40,7 +41,7 @@ export function creerPersoAleatoire(
 
   // Deck équilibré : la signature, puis au moins deux sorts offensifs et
   // au plus un sort de pur soutien. Un kit 100 % soin ne gagne jamais.
-  const choisis = composerKit(espece.sortSignature, espece.pool, rng);
+  const choisis = composerKit(espece.sortSignature, sortsApprenables(espece), rng);
   for (const defId of choisis) {
     sorts.push({
       uid: uid(`${prefixe}s`),
