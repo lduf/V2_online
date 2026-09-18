@@ -3691,6 +3691,27 @@ s {
   pointer-events: none;
 }
 
+.carte__illustration {
+  width: 100%;
+  height: 100%;
+  /* L'illustration est carrée, le panneau d'art ne l'est pas : on recadre
+     plutôt que de déformer, en privilégiant le haut où se trouve le visage. */
+  object-fit: cover;
+  object-position: 50% 22%;
+  border-radius: 9px;
+  /* Le panneau est teinté par l'élément : une image opaque le masquerait
+     entièrement. Ce léger mélange raccroche l'illustration au cadre. */
+  mix-blend-mode: normal;
+  user-select: none;
+}
+
+/* Une chromatique n'a pas d'illustration propre — vingt-huit variantes
+   peintes coûteraient autant que la série entière. On décale sa teinte, ce
+   qui reste strictement cosmétique, comme le veut la règle. */
+.carte__illustration.est-chromatique {
+  filter: hue-rotate(150deg) saturate(1.25);
+}
+
 .carte__objet {
   display: grid;
   place-items: center;
