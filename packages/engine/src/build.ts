@@ -44,7 +44,6 @@ export function construireUnite(
     especeId: perso.especeId,
     nom: perso.surnom?.trim() || espece.nom,
     niveau: perso.niveau,
-    element: espece.element,
     role: espece.role,
     passifId: espece.passif.id,
     talents,

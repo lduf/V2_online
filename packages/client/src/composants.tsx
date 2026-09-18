@@ -3,6 +3,7 @@ import {
   ESPECES_PAR_ID,
   gradeDepuisPourcent,
   INFO_ELEMENTS,
+  INFO_ROLES,
   ITEMS_PAR_ID,
   IV_MAX,
   NATURES_PAR_ID,
@@ -68,7 +69,7 @@ export function CartePerso({
 }) {
   const espece = ESPECES_PAR_ID[perso.especeId];
   if (!espece) return null;
-  const el = INFO_ELEMENTS[espece.element];
+  const el = INFO_ROLES[espece.role];
   const prog = progression(perso.xp);
   const perfection = perfectionIvs(perso.ivs);
 
@@ -83,7 +84,7 @@ export function CartePerso({
     >
       {badge && <span className="carte-perso__badge">{badge}</span>}
       <div className="carte-perso__portrait">
-        <Avatar art={espece.art} element={espece.element} taille={compact ? 56 : 84} pose="portrait" />
+        <Avatar art={espece.art} taille={compact ? 56 : 84} pose="portrait" />
       </div>
       <div className="carte-perso__corps">
         <div className="carte-perso__titre">

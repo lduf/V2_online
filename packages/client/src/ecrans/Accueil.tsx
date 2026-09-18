@@ -193,7 +193,7 @@ export function Accueil() {
             const e = ESPECES_PAR_ID[p!.especeId];
             return (
               <div key={p!.uid} className="profil__membre" title={`${p!.surnom || e.nom} — N.${p!.niveau}`}>
-                <Avatar art={e.art} element={e.element} taille={56} pose="portrait" />
+                <Avatar art={e.art} taille={56} pose="portrait" />
                 <span>{p!.surnom || e.nom}</span>
                 <small>N.{p!.niveau}</small>
               </div>

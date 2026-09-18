@@ -1,6 +1,5 @@
 import { ITEMS_PAR_ID } from './data/items.js';
 import { effetsTalents, talentsActifs } from './talents.js';
-import { multiplicateurElement } from './data/elements.js';
 import { ESPECES_PAR_ID } from './data/especes.js';
 import { Rng } from './rng.js';
 import { multiplicateurPalier } from './stats.js';
@@ -18,11 +17,28 @@ import type {
   StatsCote,
   StatutId,
   UniteCombat,
+  NiveauDefense,
+  ProfilDefense,
   UnitePublique,
   VueCombat,
 } from './types.js';
 
-export const MULT_DEGATS = 2.3;
+export const MULT_DEGATS = 3.8;
+
+/**
+ * Part de la stat défensive convertie en armure plate par coup. Volontairement
+ * BASSE : l'armure de base ne doit pas suffire à écraser la cadence, sinon
+ * l'objet d'armure n'apporte plus rien et l'axe disparaît. L'essentiel de
+ * l'armure se gagne à l'équipement — c'est un choix, pas un acquis.
+ */
+export const FACTEUR_ARMURE = 0.1;
+/** Supplément de puissance totale par coup supplémentaire d'un sort multiple. */
+export const BONUS_CADENCE = 0.22;
+/** L'armure ne peut jamais annuler plus de 70 % d'un coup. */
+export const PLANCHER_ARMURE = 0.3;
+/** Part du coup mangée par les défenses au-delà de laquelle on annonce « peu efficace ». */
+const SEUIL_FAIBLE = 0.28;
+
 export const ENERGIE_PAR_TOUR = 22;
 export const ENERGIE_ATTAQUE = 30;
 export const ENERGIE_GARDE = 34;
@@ -120,6 +136,39 @@ function talentPct(
     total += eAny.pct;
   }
   return total;
+}
+
+/**
+ * Armure : réduction PLATE appliquée à chaque coup. Elle vient pour partie de
+ * la stat défensive — un tank est naturellement armuré — et pour partie de
+ * l'équipement. C'est le premier des trois axes de contre-jeu : elle lamine
+ * les sorts à coups multiples et ne gêne presque pas un gros coup unique.
+ */
+function armureDe(u: UniteCombat, categorie: CategorieSort): number {
+  const stat =
+    categorie === 'MAGIQUE' ? statEffective(u, 'res')
+    : categorie === 'PUR' ? (statEffective(u, 'def') + statEffective(u, 'res')) / 4
+    : statEffective(u, 'def');
+  let a = stat * FACTEUR_ARMURE;
+  if (itemEffet(u) === 'PLASTRON') a += u.pvMax * 0.05;
+  for (const e of effetsTalents(u.talents, 'ARMURE')) a += u.pvMax * e.ratio;
+  if (u.flags.garde === 1) a *= 1.6;
+  return a;
+}
+
+/**
+ * Amorti : plafond de dégâts pour UN coup, en part des PV max. Contrairement
+ * à l'armure il ne se paie qu'une fois par coup, donc il est inutile contre la
+ * cadence — mais il transforme une bombe en coup ordinaire. Zéro par défaut :
+ * c'est un choix d'équipement, jamais un acquis.
+ */
+function amortiDe(u: UniteCombat): number {
+  let cap = 0;
+  if (itemEffet(u) === 'AMORTI') cap = 0.11;
+  for (const e of effetsTalents(u.talents, 'AMORTI')) {
+    cap = cap === 0 ? e.ratio : Math.min(cap, e.ratio);
+  }
+  return cap;
 }
 
 function itemEffet(u: UniteCombat): string | undefined {
@@ -384,7 +433,6 @@ export function jouerAction(etat: EtatCombat, cote: Cote, action: BattleAction):
         t: 'ACTION',
         cote,
         libelle: 'Garde',
-        element: u.element,
         vfx: { forme: 'aura', intensite: 0.9 },
       });
       evts.push({ t: 'MESSAGE', texte: `${u.nom} se met en garde.`, ton: 'info' });
@@ -603,7 +651,10 @@ function resoudreDegats(
       break;
   }
 
-  let puissance = sort.puissance / coups;
+  // Un sort à coups multiples répartit sa puissance, mais gagne un supplément
+  // de total : c'est ce qui le rend meilleur que la frappe unique CONTRE UNE
+  // CIBLE PEU ARMURÉE, et donc ce qui rend l'armure intéressante en face.
+  let puissance = (sort.puissance / coups) * (1 + BONUS_CADENCE * (coups - 1));
   if (att.passifId === 'theoreme' && sort.def.de >= 15) puissance *= 1.12;
   if (aStatut(att, 'CONCENTRATION')) puissance *= 1.3;
 
@@ -611,15 +662,6 @@ function resoudreDegats(
     ((((2 * att.niveau) / 5 + 2) * puissance * (statAtt / statDef)) / 50 + 2) * MULT_DEGATS;
 
   degats *= coeff;
-
-  // Efficacité élémentaire + STAB.
-  const multElem = multiplicateurElement(sort.def.element, def.element);
-  degats *= multElem;
-  if (sort.def.element === att.element) degats *= 1.2;
-
-  let efficacite: Efficacite = 'NEUTRE';
-  if (multElem > 1) efficacite = 'SUPER';
-  else if (multElem < 1) efficacite = 'FAIBLE';
 
   // Critique.
   let chanceCrit = 5 + statEffective(att, 'chance') / 12 + sort.critique;
@@ -646,7 +688,10 @@ function resoudreDegats(
   if ((att.flags.tours ?? 0) === 0) {
     bonusTalent += talentPct(att, 'DEGATS', sort.def.categorie, 'PREMIER_TOUR');
   }
-  if (efficacite === 'SUPER') bonusTalent += talentPct(att, 'DEGATS', sort.def.categorie, 'SUPER');
+  // Le dé est l'identité du jeu : un talent peut récompenser un haut jet.
+  // coeff = 0.55 + 0.45 × (jet / faces), donc le ratio se retrouve ainsi.
+  const ratioDe = (coeff - 0.55) / 0.45;
+  if (ratioDe > 0.8) bonusTalent += talentPct(att, 'DEGATS', sort.def.categorie, 'DE_HAUT');
   if (def.pv / def.pvMax < 0.5) {
     bonusTalent += talentPct(att, 'DEGATS', sort.def.categorie, 'CIBLE_ENTAMEE');
   }
@@ -684,6 +729,39 @@ function resoudreDegats(
   // Variance légère.
   degats *= 0.94 + rng.next() * 0.12;
   etat.rng = rng.state;
+
+  // ── Les deux défenses opposées, appliquées en dernier ────────────────
+  // Elles ne sont pas des multiplicateurs mais une soustraction et un
+  // plafond : c'est ce qui les rend opposées l'une à l'autre.
+  const avantDefenses = degats;
+
+  // L'armure retire un montant PLAT à chaque coup. Un sort qui frappe cinq
+  // fois la paie cinq fois : l'armure est le contre de la cadence.
+  const arm = armureDe(def, sort.def.categorie);
+  if (arm > 0) degats = Math.max(degats * PLANCHER_ARMURE, degats - arm);
+
+  // L'amorti plafonne ce qu'UN coup peut retirer. Il ne sert à rien contre
+  // une pluie de petits coups, mais il désamorce la bombe.
+  const cap = amortiDe(def);
+  if (cap > 0) degats = Math.min(degats, def.pvMax * cap);
+
+  // L'efficacité annonce si la LECTURE était bonne, pas si le coup était gros.
+  // C'est le même critère que l'indice affiché sur le bouton de sort, pour que
+  // le joueur puisse le prévoir au lieu de le subir.
+  const mange = 1 - degats / Math.max(1, avantDefenses);
+  const multi = coups > 1;
+  const grosCoup = !multi && sort.puissance >= 95;
+  const armureForte = arm >= def.pvMax * 0.055;
+  const armureFaible = arm < def.pvMax * 0.028;
+
+  // « Super efficace » salue le fait d'avoir battu un INVESTISSEMENT défensif,
+  // pas celui d'avoir frappé une cible nue : mitrailler quelqu'un qui a misé
+  // sur l'amorti, ou lâcher la bombe sur quelqu'un qui a misé sur l'armure.
+  // Sans cette condition la mention s'affichait sur un quart des coups.
+  let efficacite: Efficacite = 'NEUTRE';
+  if (mange > SEUIL_FAIBLE) efficacite = 'FAIBLE';
+  else if (multi && armureFaible && cap > 0) efficacite = 'SUPER';
+  else if (grosCoup && cap === 0 && armureForte) efficacite = 'SUPER';
 
   const final = Math.max(1, Math.round(degats));
   const inflige = infligerBrut(etat, coteAdv, def, final, evts, efficacite, critique);
@@ -843,6 +921,12 @@ function ajouterStatut(
   evts: EvtCombat[],
 ): void {
   if (u.ko) return;
+  // L'antidote est l'axe « statuts contre purge » : immunité permanente, mais
+  // elle occupe l'emplacement d'objet — c'est un vrai arbitrage.
+  if (estMauvais(id) && itemEffet(u) === 'ANTIDOTE') {
+    evts.push({ t: 'MESSAGE', texte: `${u.nom} est immunisé.`, ton: 'bien' });
+    return;
+  }
   if (estMauvais(id) && itemEffet(u) === 'TALISMAN' && !u.flags.talismanUtilise) {
     u.flags.talismanUtilise = 1;
     evts.push({ t: 'MESSAGE', texte: `${u.nom} annule ${INFO_STATUTS[id].nom} !`, ton: 'bien' });
@@ -1074,13 +1158,33 @@ function terminer(etat: EtatCombat, vainqueur: Cote | null, motif: string, evts:
 
 // ───────────────────────────── Vues ─────────────────────────────
 
+/**
+ * Traduit l'armure chiffrée en trois crans lisibles. Les seuils sont exprimés
+ * en part des PV max pour rester justes à tous les niveaux : une armure de 20
+ * n'a pas le même sens à 120 PV qu'à 500.
+ */
+function cran(armure: number, pvMax: number): NiveauDefense {
+  const part = armure / Math.max(1, pvMax);
+  if (part >= 0.055) return 'FORTE';
+  if (part >= 0.028) return 'MOYENNE';
+  return 'FAIBLE';
+}
+
+function profilDefense(u: UniteCombat): ProfilDefense {
+  return {
+    armurePhysique: cran(armureDe(u, 'PHYSIQUE'), u.pvMax),
+    armureMagique: cran(armureDe(u, 'MAGIQUE'), u.pvMax),
+    amorti: amortiDe(u) > 0,
+    antidote: itemEffet(u) === 'ANTIDOTE',
+  };
+}
+
 function vueUnite(u: UniteCombat, complet: boolean): UnitePublique {
   const base: UnitePublique = {
     uid: u.uid,
     especeId: u.especeId,
     nom: u.nom,
     niveau: u.niveau,
-    element: u.element,
     role: u.role,
     art: u.art,
     chromatique: u.chromatique,
@@ -1096,6 +1200,7 @@ function vueUnite(u: UniteCombat, complet: boolean): UnitePublique {
     itemId: u.itemId,
     passifId: u.passifId,
     talents: u.talents,
+    profil: profilDefense(u),
   };
   if (complet) {
     base.sorts = u.sorts;

@@ -2,11 +2,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ESPECES_PAR_ID,
   INFO_ELEMENTS,
+  INFO_ROLES,
   ITEMS_PAR_ID,
-  multiplicateurElement,
   type BattleAction,
   type Cote,
   type EvtCombat,
+  type ProfilDefense,
   type SortPret,
   type UnitePublique,
 } from '@arene/engine';
@@ -485,7 +486,7 @@ export function Combat({ combatId }: { combatId: string }) {
           doitRemplacer={doitRemplacer}
           equipe={moi.unites}
           indexActif={affichage.actifs[monCote]}
-          cibleElement={sonActif.element}
+          cibleProfil={sonActif.profil}
           ouvrirSwitch={ouvrirSwitch}
           setOuvrirSwitch={setOuvrirSwitch}
           onAction={agir}
@@ -564,7 +565,6 @@ function ArenePlateau(props: {
         <div className="combattant__scene">
           <Avatar
             art={sonActif.art}
-            element={sonActif.element}
             taille={152}
             pose={dAdv?.ko ? 'ko' : (pose[sonActif.uid] ?? 'repos')}
             miroir
@@ -589,7 +589,6 @@ function ArenePlateau(props: {
         <div className="combattant__scene">
           <Avatar
             art={monActif.art}
-            element={monActif.element}
             taille={182}
             pose={dMoi?.ko ? 'ko' : (pose[monActif.uid] ?? 'repos')}
             avecFond={false}
@@ -631,7 +630,7 @@ function FicheCombattant({
   avecEnergie?: boolean;
 }) {
   const espece = ESPECES_PAR_ID[unite.especeId];
-  const el = INFO_ELEMENTS[unite.element];
+  const el = INFO_ROLES[unite.role];
   return (
     <div className={`fiche fiche--${alignement}`}>
       <div className="fiche__ligne1">
@@ -672,7 +671,7 @@ function PanneauActions({
   doitRemplacer,
   equipe,
   indexActif,
-  cibleElement,
+  cibleProfil,
   ouvrirSwitch,
   setOuvrirSwitch,
   onAction,
@@ -684,7 +683,7 @@ function PanneauActions({
   doitRemplacer: boolean;
   equipe: UnitePublique[];
   indexActif: number;
-  cibleElement: string;
+  cibleProfil: ProfilDefense;
   ouvrirSwitch: boolean;
   setOuvrirSwitch: (v: boolean) => void;
   onAction: (a: BattleAction) => void;
@@ -709,7 +708,7 @@ function PanneauActions({
               disabled={u.ko || i === indexActif || !actif || envoi}
               onClick={() => onAction({ type: 'SWITCH', index: i })}
             >
-              <Avatar art={u.art} element={u.element} taille={52} avecFond={false} pose="portrait" />
+              <Avatar art={u.art} taille={52} avecFond={false} pose="portrait" />
               <div className="carte-switch__info">
                 <strong>{u.nom}</strong>
                 <BarreVie
@@ -718,7 +717,7 @@ function PanneauActions({
                   compact
                 />
                 <small>
-                  {INFO_ELEMENTS[u.element].emoji} N.{u.niveau}
+                  {INFO_ROLES[u.role].emoji} N.{u.niveau}
                   {u.ko ? ' · K.O.' : i === indexActif ? ' · en jeu' : ''}
                 </small>
               </div>
@@ -743,8 +742,7 @@ function PanneauActions({
             sort={s}
             recharge={recharges[i] ?? 0}
             energie={energie}
-            cibleElement={cibleElement}
-            elementLanceur={unite.element}
+            cibleProfil={cibleProfil}
             disponible={actif && !envoi}
             onClick={() => onAction({ type: 'SORT', index: i })}
           />
@@ -772,28 +770,46 @@ function PanneauActions({
   );
 }
 
+/**
+ * Confronte le profil du sort à la défense d'en face. C'est le remplaçant
+ * direct du multiplicateur élémentaire, à ceci près que le joueur peut le
+ * déduire lui-même en lisant la carte : une armure épaisse mange les sorts à
+ * coups multiples, un amorti désamorce les gros coups uniques.
+ */
+function lireDefense(sort: SortPret, p: ProfilDefense): { bon: boolean; texte: string } | null {
+  if (sort.def.puissance <= 0) return null;
+  const multi = sort.def.effets.some((e) => e.type === 'MULTI');
+  const armure = sort.def.categorie === 'MAGIQUE' ? p.armureMagique : p.armurePhysique;
+  const grosCoup = sort.puissance >= 95 && !multi;
+
+  // Mêmes conditions que le moteur, pour que l'indice annonce exactement ce
+  // que le combat affichera ensuite.
+  if (multi && armure === 'FORTE') return { bon: false, texte: 'Armure épaisse' };
+  if (grosCoup && p.amorti) return { bon: false, texte: 'Coup amorti' };
+  if (multi && armure === 'FAIBLE' && p.amorti) return { bon: true, texte: 'Contourne l’amorti' };
+  if (grosCoup && !p.amorti && armure === 'FORTE') return { bon: true, texte: 'Passe l’armure' };
+  return null;
+}
+
 function CarteSort({
   sort,
   recharge,
   energie,
-  cibleElement,
-  elementLanceur,
+  cibleProfil,
   disponible,
   onClick,
 }: {
   sort: SortPret;
   recharge: number;
   energie: number;
-  cibleElement: string;
-  elementLanceur: string;
+  cibleProfil: ProfilDefense;
   disponible: boolean;
   onClick: () => void;
 }) {
   const el = INFO_ELEMENTS[sort.def.element];
   const assezEnergie = energie >= sort.cout;
   const pret = recharge === 0 && assezEnergie && disponible;
-  const mult = multiplicateurElement(sort.def.element, cibleElement as never);
-  const stab = sort.def.element === elementLanceur;
+  const lecture = lireDefense(sort, cibleProfil);
 
   return (
     <button
@@ -818,9 +834,7 @@ function CarteSort({
         </span>
       </div>
       <div className="carte-sort__bas">
-        {mult > 1 && <em className="est-super">Super efficace</em>}
-        {mult < 1 && <em className="est-faible">Peu efficace</em>}
-        {stab && <em className="est-stab">Affinité</em>}
+        {lecture && <em className={lecture.bon ? 'est-super' : 'est-faible'}>{lecture.texte}</em>}
         {recharge > 0 && <em className="est-recharge">Recharge {recharge}</em>}
         {sort.def.recharge > 0 && recharge === 0 && <em className="est-info">CD {sort.def.recharge}</em>}
       </div>

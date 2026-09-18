@@ -1,5 +1,11 @@
 /** Types partagés entre le moteur, le serveur et le client. */
 
+/**
+ * Une teinte est un registre VISUEL, pas un type de combat : elle choisit la
+ * couleur et l'animation d'un sort, et rien d'autre. Il n'existe aucun tableau
+ * d'efficacité entre teintes, et les personnages n'en portent pas — la
+ * contre-jeu passe entièrement par les cartes (armure, amorti, statuts, tempo).
+ */
 export type Element = 'FEU' | 'EAU' | 'FOUDRE' | 'NATURE' | 'OMBRE' | 'LUMIERE' | 'ARCANE';
 
 export type StatKey = 'pv' | 'atq' | 'def' | 'mag' | 'res' | 'vit' | 'chance';
@@ -103,6 +109,12 @@ export interface ItemDef {
 }
 
 export type ItemEffetId =
+  /** Armure : retire un montant plat à CHAQUE coup encaissé. */
+  | 'PLASTRON'
+  /** Amorti : plafonne ce qu'un seul coup peut retirer. */
+  | 'AMORTI'
+  /** Immunise contre les statuts négatifs. */
+  | 'ANTIDOTE'
   | 'SURVIE'
   | 'VAMPIRIQUE'
   | 'EPINES'
@@ -147,7 +159,6 @@ export interface EspeceDef {
   nom: string;
   titre: string;
   role: Role;
-  element: Element;
   rarete: Rarete;
   base: Record<StatKey, number>;
   passif: PassifDef;
@@ -241,7 +252,6 @@ export interface UniteCombat {
   especeId: string;
   nom: string;
   niveau: number;
-  element: Element;
   role: Role;
   passifId: string;
   talents: string[];
@@ -319,6 +329,11 @@ export type BattleAction =
   | { type: 'SWITCH'; index: number }
   | { type: 'ABANDON' };
 
+/**
+ * Ce que les défenses ont mangé du coup. « SUPER » = le coup est passé
+ * quasi intact alors qu'il était gros : la lecture était bonne. « FAIBLE » =
+ * l'armure ou l'amorti en ont avalé une grosse part.
+ */
 export type Efficacite = 'SUPER' | 'NEUTRE' | 'FAIBLE' | 'IMMUNISE';
 
 export type EvtCombat =
@@ -349,13 +364,32 @@ export type EvtCombat =
   | { t: 'PASSIF'; cote: Cote; uniteUid: string; nom: string }
   | { t: 'FIN'; vainqueur: Cote | null; motif: string };
 
+/**
+ * Lecture publique de la défense d'une unité. Volontairement grossière : on
+ * montre le profil, pas les chiffres exacts de l'adversaire. C'est ce qui
+ * remplace le tableau des types — savoir si on a en face une armure épaisse
+ * (qui lamine les sorts à coups multiples) ou un amorti (qui désamorce les
+ * grosses bombes).
+ */
+export interface ProfilDefense {
+  /** Armure contre les attaques physiques. */
+  armurePhysique: NiveauDefense;
+  /** Armure contre les attaques magiques. */
+  armureMagique: NiveauDefense;
+  /** L'unité plafonne-t-elle les gros coups ? */
+  amorti: boolean;
+  /** L'unité résiste-t-elle aux statuts ? */
+  antidote: boolean;
+}
+
+export type NiveauDefense = 'FAIBLE' | 'MOYENNE' | 'FORTE';
+
 /** Vue publique d'une unité (ce que le client adverse a le droit de voir). */
 export interface UnitePublique {
   uid: string;
   especeId: string;
   nom: string;
   niveau: number;
-  element: Element;
   role: Role;
   art: ArtSpec;
   chromatique: boolean;
@@ -371,6 +405,7 @@ export interface UnitePublique {
   itemId: string | null;
   passifId: string;
   talents: string[];
+  profil: ProfilDefense;
   /** Renseigné uniquement pour l'équipe du destinataire. */
   sorts?: SortPret[];
   recharges?: number[];

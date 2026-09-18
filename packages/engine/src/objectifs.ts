@@ -1,7 +1,6 @@
-import type { Element, Rarete } from './types.js';
+import type { Rarete, Role } from './types.js';
 import type { ModeMatch } from './progression.js';
 import { ESPECES } from './data/especes.js';
-import { INFO_ELEMENTS } from './data/elements.js';
 import type { Rng } from './rng.js';
 
 /**
@@ -16,7 +15,7 @@ import type { Rng } from './rng.js';
 
 export type ConditionObjectif =
   | { type: 'VICTOIRES'; nombre: number; modes?: ModeMatch[] }
-  | { type: 'VICTOIRE_ELEMENT'; element: Element }
+  | { type: 'VICTOIRE_ROLE'; role: Role }
   | { type: 'DES_PARFAITS'; nombre: number }
   | { type: 'COUP_PUISSANT'; montant: number }
   | { type: 'VICTOIRE_SANS_CHANGER' }
@@ -140,15 +139,25 @@ export const PREMIERS_PAS_PAR_ID: Record<string, Objectif> = Object.fromEntries(
 
 // ─────────────────────────── Contrats journaliers ───────────────────────────
 
-function contratsElementaires(): Objectif[] {
-  return ESPECES.map((e) => e.element)
-    .filter((el, i, arr) => arr.indexOf(el) === i)
-    .map((el) => ({
-      id: `cj_element_${el.toLowerCase()}`,
-      nom: `Affinité ${INFO_ELEMENTS[el].nom}`,
-      texte: `Remporte un combat avec un personnage ${INFO_ELEMENTS[el].nom} en jeu.`,
-      emoji: INFO_ELEMENTS[el].emoji,
-      condition: { type: 'VICTOIRE_ELEMENT', element: el } as ConditionObjectif,
+const LIBELLE_ROLE: Record<Role, { nom: string; emoji: string }> = {
+  MAGE: { nom: 'mage', emoji: '🔮' },
+  BRUISER: { nom: 'bruiser', emoji: '💪' },
+  ASSASSIN: { nom: 'assassin', emoji: '🗡️' },
+  SOUTIEN: { nom: 'soutien', emoji: '✚' },
+  TANK: { nom: 'tank', emoji: '🛡️' },
+  FARCEUR: { nom: 'farceur', emoji: '🎲' },
+};
+
+/** Les contrats poussent à sortir de son équipe habituelle, par rôle. */
+function contratsParRole(): Objectif[] {
+  return ESPECES.map((e) => e.role)
+    .filter((r, i, arr) => arr.indexOf(r) === i)
+    .map((role) => ({
+      id: `cj_role_${role.toLowerCase()}`,
+      nom: `Spécialiste ${LIBELLE_ROLE[role].nom}`,
+      texte: `Remporte un combat avec un ${LIBELLE_ROLE[role].nom} dans ton équipe.`,
+      emoji: LIBELLE_ROLE[role].emoji,
+      condition: { type: 'VICTOIRE_ROLE', role } as ConditionObjectif,
       recompense: { credits: 260 },
     }));
 }
@@ -218,7 +227,7 @@ export const CONTRATS: Objectif[] = [
     condition: { type: 'VICTOIRES', nombre: 1, modes: ['CLASSE'] },
     recompense: { credits: 420, eclats: 3 },
   },
-  ...contratsElementaires(),
+  ...contratsParRole(),
 ];
 
 export const CONTRATS_PAR_ID: Record<string, Objectif> = Object.fromEntries(

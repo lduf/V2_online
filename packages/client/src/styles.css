@@ -5266,3 +5266,45 @@ s {
   border-left-color: var(--accent);
   opacity: 0.92;
 }
+
+/* ─────────────────── Codex : les axes de contre-jeu ─────────────────── */
+
+.axes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 0.9rem;
+  margin: 0.9rem 0 1.2rem;
+}
+
+.axe {
+  padding: 0.95rem 1.05rem;
+  border-radius: var(--rayon-s);
+  border: 1px solid var(--panneau-bord);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.axe h4 {
+  margin: 0 0 0.45rem;
+  font-size: 0.92rem;
+  color: var(--accent-2);
+}
+
+.axe p {
+  margin: 0 0 0.5rem;
+  font-size: 0.86rem;
+  line-height: 1.6;
+  color: var(--texte-doux);
+}
+
+.axe p:last-child {
+  margin-bottom: 0;
+}
+
+/* La ligne de mesure : ce sont des chiffres relevés en simulation, pas une
+   promesse marketing. On la distingue du reste. */
+.axe__mesure {
+  font-size: 0.8rem !important;
+  color: var(--texte-faible) !important;
+  border-left: 2px solid var(--accent);
+  padding-left: 0.6rem;
+}

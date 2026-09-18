@@ -25,6 +25,38 @@ export const ITEMS: ItemDef[] = [
     emoji: '🧮',
   },
   {
+    id: 'doudoune_amphi',
+    nom: 'Doudoune d’Amphi',
+    rarete: 'RARE',
+    bonus: { pv: 70, vit: -6 },
+    effet: 'PLASTRON',
+    texte:
+      'Armure épaisse : retire un montant fixe à chaque coup encaissé. Dévastatrice contre les sorts qui frappent plusieurs fois, presque inutile contre un gros coup unique.',
+    prix: 1350,
+    emoji: '🧥',
+  },
+  {
+    id: 'casque_velo',
+    nom: 'Casque de Vélo',
+    rarete: 'RARE',
+    bonus: { pv: 50, def: 10 },
+    effet: 'AMORTI',
+    texte:
+      'Aucun coup ne peut te retirer plus de 11 % de tes PV max. Le contraire exact de la doudoune : il désamorce la bombe et ne fait rien contre la mitraille.',
+    prix: 1400,
+    emoji: '🪖',
+  },
+  {
+    id: 'gel_hydro',
+    nom: 'Gel Hydroalcoolique',
+    rarete: 'RARE',
+    bonus: { res: 16, pv: 30 },
+    effet: 'ANTIDOTE',
+    texte: 'Immunise contre les statuts négatifs. Toute la promo en a un dans le sac.',
+    prix: 1300,
+    emoji: '🧴',
+  },
+  {
     id: 'ie_maths',
     nom: 'IE de Maths',
     rarete: 'RARE',

@@ -7,7 +7,7 @@ import {
   PREMIERS_PAS,
   PREMIERS_PAS_PAR_ID,
   Rng,
-  type Element,
+  type Role,
   type ModeMatch,
   type Objectif,
   type StatsCote,
@@ -31,7 +31,7 @@ export type EvenementJeu =
       victoire: boolean;
       mode: ModeMatch;
       stats: StatsCote;
-      elements: Element[];
+      roles: Role[];
     }
   | { type: 'BOOSTER'; nombre: number }
   | { type: 'ETAGE_TOUR'; etage: number }
@@ -91,9 +91,9 @@ function apport(o: Objectif, e: EvenementJeu): { delta: number; mode: 'increment
       if (e.type !== 'COMBAT' || !e.victoire) break;
       if (c.modes && !c.modes.includes(e.mode)) break;
       return { delta: 1, mode: 'incremente' };
-    case 'VICTOIRE_ELEMENT':
+    case 'VICTOIRE_ROLE':
       if (e.type !== 'COMBAT' || !e.victoire) break;
-      if (!e.elements.includes(c.element)) break;
+      if (!e.roles.includes(c.role)) break;
       return { delta: 1, mode: 'maximum' };
     case 'VICTOIRE_SANS_CHANGER':
       if (e.type !== 'COMBAT' || !e.victoire || e.stats.changements > 0) break;

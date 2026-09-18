@@ -8,6 +8,7 @@ import {
   valeurDissolutionPerso,
   ESPECES_PAR_ID,
   INFO_ELEMENTS,
+  INFO_ROLES,
   ITEMS_PAR_ID,
   IV_MAX,
   NATURES_PAR_ID,
@@ -261,7 +262,7 @@ export function Atelier() {
         <>
           <section className="panneau atelier__detail">
             <div className="detail__entete">
-              <Avatar art={espece.art} element={espece.element} taille={120} pose="repos" />
+              <Avatar art={espece.art} taille={120} pose="repos" />
               <div>
                 <h2>
                   {perso.surnom || espece.nom}
@@ -273,8 +274,11 @@ export function Atelier() {
                   {espece.titre} · {espece.role.toLowerCase()}
                 </p>
                 <p className="detail__meta">
-                  <span style={{ color: INFO_ELEMENTS[espece.element].couleur }}>
-                    {INFO_ELEMENTS[espece.element].emoji} {INFO_ELEMENTS[espece.element].nom}
+                  <span
+                    style={{ color: INFO_ROLES[espece.role].couleur }}
+                    title={INFO_ROLES[espece.role].texte}
+                  >
+                    {INFO_ROLES[espece.role].emoji} {INFO_ROLES[espece.role].nom}
                   </span>
                   <Rarete rarete={espece.rarete} />
                   <span>Niveau {perso.niveau}</span>

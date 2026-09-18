@@ -207,11 +207,10 @@ function construire(d: DonneesCarte): ContenuCarte {
     return {
       nom: d.perso?.surnom || espece.nom,
       rarete: espece.rarete,
-      element: espece.element,
       type: `${espece.role.charAt(0)}${espece.role.slice(1).toLowerCase()} · ${espece.titre}`,
       texte: `✦ ${espece.passif.nom} — ${espece.passif.texte}`,
       coin: d.perso ? `N.${d.perso.niveau}` : undefined,
-      art: <Avatar art={art} element={espece.element} taille={112} pose="portrait" avecFond={false} />,
+      art: <Avatar art={art} taille={112} pose="portrait" avecFond={false} />,
       stats: stats
         ? [
             { cle: 'PV', valeur: stats.pv, titre: 'Points de vie' },

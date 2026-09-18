@@ -34,20 +34,9 @@ export const INFO_ELEMENTS: Record<Element, InfoElement> = {
   ARCANE: { id: 'ARCANE', nom: 'Arcane', couleur: '#ff4fa3', couleurClaire: '#ffb3d6', emoji: '🔮' },
 };
 
-const SUPER = 1.5;
-const FAIBLE = 0.7;
-
-/** TABLE[attaquant][defenseur] = multiplicateur. */
-export const TABLE_ELEMENTS: Record<Element, Partial<Record<Element, number>>> = {
-  FEU: { NATURE: SUPER, EAU: FAIBLE, FEU: FAIBLE },
-  EAU: { FEU: SUPER, FOUDRE: FAIBLE, EAU: FAIBLE },
-  FOUDRE: { EAU: SUPER, NATURE: FAIBLE, FOUDRE: FAIBLE },
-  NATURE: { FOUDRE: SUPER, FEU: FAIBLE, NATURE: FAIBLE },
-  OMBRE: { LUMIERE: SUPER, OMBRE: FAIBLE },
-  LUMIERE: { OMBRE: SUPER, LUMIERE: FAIBLE },
-  ARCANE: {},
-};
-
-export function multiplicateurElement(attaquant: Element, defenseur: Element): number {
-  return TABLE_ELEMENTS[attaquant][defenseur] ?? 1;
-}
+/*
+ * Il n'y a plus de table d'efficacité. Une teinte ne donne aucun bonus ni
+ * malus contre une autre : elle ne sert qu'à choisir une couleur et une
+ * animation. La contre-jeu passe entièrement par les cartes — voir
+ * `armureDe` et `amortiDe` dans combat.ts.
+ */

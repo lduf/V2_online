@@ -435,7 +435,7 @@ async function cloturer(db: Pilote, c: CombatCharge): Promise<void> {
         victoire,
         mode: c.mode,
         stats: c.etat.stats[cote],
-        elements: c.etat.equipes[cote].unites.map((u) => u.element),
+        roles: c.etat.equipes[cote].unites.map((u) => u.role),
       });
     }
 

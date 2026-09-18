@@ -1,5 +1,4 @@
 import { actionsPossibles, autreCote, jouerAction, vuePour } from './combat.js';
-import { multiplicateurElement } from './data/elements.js';
 import { Rng } from './rng.js';
 import type { BattleAction, Cote, EtatCombat, UniteCombat } from './types.js';
 
@@ -53,9 +52,23 @@ export function evaluer(etat: EtatCombat, cote: Cote): number {
   return scoreEquipe(cote) - scoreEquipe(autreCote(cote));
 }
 
-/** Avantage élémentaire brut d'une unité face à une autre. */
+/**
+ * Avantage de profil : mon meilleur sort tape-t-il la défense la plus faible
+ * de l'adversaire, et l'inverse est-il vrai ? Remplace l'ancien avantage
+ * élémentaire — l'IA lit maintenant la même chose que le joueur.
+ */
 function avantage(a: UniteCombat, d: UniteCombat): number {
-  return multiplicateurElement(a.element, d.element) - multiplicateurElement(d.element, a.element);
+  const lecture = (att: UniteCombat, def: UniteCombat): number => {
+    const physique = att.sorts.some((s) => s.def.categorie === 'PHYSIQUE' && s.puissance > 0);
+    const magique = att.sorts.some((s) => s.def.categorie === 'MAGIQUE' && s.puissance > 0);
+    // Une défense basse en face du bon type de dégâts vaut un avantage.
+    const ecart = (def.stats.res - def.stats.def) / Math.max(1, def.stats.def + def.stats.res);
+    let v = 0;
+    if (physique) v += ecart;
+    if (magique) v -= ecart;
+    return v;
+  };
+  return lecture(a, d) - lecture(d, a);
 }
 
 /** Choix glouton rapide, utilisé pour simuler la riposte adverse. */

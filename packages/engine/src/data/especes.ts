@@ -10,7 +10,6 @@ export const ESPECES: EspeceDef[] = [
     nom: 'Maxence',
     titre: 'Le Réchaud',
     role: 'BRUISER',
-    element: 'FEU',
     rarete: 'COMMUN',
     base: { pv: 86, atq: 88, def: 68, mag: 52, res: 54, vit: 66, chance: 40 },
     passif: {
@@ -50,7 +49,6 @@ export const ESPECES: EspeceDef[] = [
     nom: 'Fanny',
     titre: 'La Sereine',
     role: 'SOUTIEN',
-    element: 'LUMIERE',
     rarete: 'RARE',
     base: { pv: 92, atq: 48, def: 72, mag: 92, res: 88, vit: 62, chance: 52 },
     passif: {
@@ -90,7 +88,6 @@ export const ESPECES: EspeceDef[] = [
     nom: 'Vlad',
     titre: 'Le Nocturne',
     role: 'ASSASSIN',
-    element: 'OMBRE',
     rarete: 'RARE',
     base: { pv: 70, atq: 102, def: 52, mag: 66, res: 54, vit: 100, chance: 76 },
     passif: {
@@ -130,7 +127,6 @@ export const ESPECES: EspeceDef[] = [
     nom: 'Brigitte',
     titre: 'Béton Armé',
     role: 'TANK',
-    element: 'NATURE',
     rarete: 'COMMUN',
     base: { pv: 112, atq: 62, def: 104, mag: 44, res: 82, vit: 40, chance: 34 },
     passif: {
@@ -169,7 +165,6 @@ export const ESPECES: EspeceDef[] = [
     nom: 'Kilowatt',
     titre: 'Le Survolté',
     role: 'MAGE',
-    element: 'FOUDRE',
     rarete: 'RARE',
     base: { pv: 74, atq: 54, def: 56, mag: 104, res: 66, vit: 94, chance: 58 },
     passif: {
@@ -209,7 +204,6 @@ export const ESPECES: EspeceDef[] = [
     nom: 'Ondine',
     titre: 'Marée Basse',
     role: 'MAGE',
-    element: 'EAU',
     rarete: 'COMMUN',
     base: { pv: 84, atq: 50, def: 64, mag: 92, res: 80, vit: 68, chance: 46 },
     passif: {
@@ -248,7 +242,6 @@ export const ESPECES: EspeceDef[] = [
     nom: 'Zizou',
     titre: 'Le Coup de Boule',
     role: 'BRUISER',
-    element: 'ARCANE',
     rarete: 'EPIQUE',
     base: { pv: 96, atq: 108, def: 78, mag: 56, res: 66, vit: 86, chance: 62 },
     passif: {
@@ -288,7 +281,6 @@ export const ESPECES: EspeceDef[] = [
     nom: 'Professeur Thermo',
     titre: 'Le Second Principe',
     role: 'MAGE',
-    element: 'ARCANE',
     rarete: 'EPIQUE',
     base: { pv: 96, atq: 46, def: 78, mag: 116, res: 92, vit: 64, chance: 50 },
     passif: {
@@ -328,7 +320,6 @@ export const ESPECES: EspeceDef[] = [
     nom: 'Le Contrôleur',
     titre: 'Titres de Transport',
     role: 'FARCEUR',
-    element: 'OMBRE',
     rarete: 'RARE',
     base: { pv: 88, atq: 72, def: 72, mag: 68, res: 72, vit: 84, chance: 60 },
     passif: {
@@ -367,7 +358,6 @@ export const ESPECES: EspeceDef[] = [
     nom: 'Aurore',
     titre: "L'Aube Claire",
     role: 'SOUTIEN',
-    element: 'LUMIERE',
     rarete: 'EPIQUE',
     base: { pv: 98, atq: 52, def: 82, mag: 102, res: 100, vit: 66, chance: 54 },
     passif: {
@@ -407,7 +397,6 @@ export const ESPECES: EspeceDef[] = [
     nom: 'Kaïros',
     titre: 'Le Dé Pipé',
     role: 'FARCEUR',
-    element: 'ARCANE',
     rarete: 'LEGENDAIRE',
     base: { pv: 92, atq: 86, def: 74, mag: 96, res: 76, vit: 92, chance: 108 },
     passif: {
@@ -447,7 +436,6 @@ export const ESPECES: EspeceDef[] = [
     nom: 'Ignis Rex',
     titre: 'Le Brasier',
     role: 'MAGE',
-    element: 'FEU',
     rarete: 'LEGENDAIRE',
     base: { pv: 100, atq: 74, def: 84, mag: 120, res: 86, vit: 84, chance: 64 },
     passif: {
@@ -486,7 +474,6 @@ export const ESPECES: EspeceDef[] = [
     nom: 'Nyx',
     titre: 'Buveuse d’Âmes',
     role: 'MAGE',
-    element: 'OMBRE',
     rarete: 'EPIQUE',
     base: { pv: 86, atq: 58, def: 66, mag: 110, res: 82, vit: 78, chance: 64 },
     passif: {
@@ -526,7 +513,6 @@ export const ESPECES: EspeceDef[] = [
     nom: 'Bourrasque',
     titre: 'Jamais Là',
     role: 'ASSASSIN',
-    element: 'EAU',
     rarete: 'RARE',
     base: { pv: 72, atq: 96, def: 52, mag: 70, res: 52, vit: 106, chance: 72 },
     passif: {
@@ -565,7 +551,6 @@ export const ESPECES: EspeceDef[] = [
     nom: 'Rocco',
     titre: 'Le Poulet Fermier',
     role: 'BRUISER',
-    element: 'NATURE',
     rarete: 'COMMUN',
     base: { pv: 100, atq: 92, def: 78, mag: 40, res: 58, vit: 58, chance: 42 },
     passif: {
@@ -604,7 +589,6 @@ export const ESPECES: EspeceDef[] = [
     nom: 'Séraphine',
     titre: 'Égide Vivante',
     role: 'TANK',
-    element: 'LUMIERE',
     rarete: 'EPIQUE',
     base: { pv: 118, atq: 66, def: 108, mag: 72, res: 96, vit: 48, chance: 44 },
     passif: {

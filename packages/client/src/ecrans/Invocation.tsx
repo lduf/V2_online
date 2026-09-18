@@ -126,10 +126,10 @@ export function Invocation() {
               className={`vitrine__perso rarete--${e.rarete.toLowerCase()} ${
                 possedes.has(e.id) ? 'est-possede' : ''
               }`}
-              style={{ '--el': INFO_ELEMENTS[e.element].couleur } as React.CSSProperties}
+              style={{ '--el': e.art.accent } as React.CSSProperties}
               title={`${e.nom} — ${e.titre} · ${e.passif.nom}`}
             >
-              <Avatar art={e.art} element={e.element} taille={64} pose="portrait" />
+              <Avatar art={e.art} taille={64} pose="portrait" />
               <strong>{e.nom}</strong>
               <Rarete rarete={e.rarete} />
               {possedes.has(e.id) && <span className="vitrine__coche">✓</span>}
