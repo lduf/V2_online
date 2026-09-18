@@ -25,3 +25,9 @@ donnees/
 
 # Artefacts de compilation TypeScript
 *.tsbuildinfo
+
+# Sorties des outils d'art : planches de comparaison et captures de la
+# vitrine. Regénérables en une commande depuis les illustrations commitées,
+# et vingt fois plus lourdes qu'elles — 19 Mo de PNG pour 732 ko de WebP.
+outils/art/planches/
+outils/art/captures/
